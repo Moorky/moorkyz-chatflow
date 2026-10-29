@@ -2,6 +2,7 @@ import { strToU8, zipSync } from 'fflate';
 import { statistics } from '../analytics/statistics';
 import { sha256 } from '../shared/integrity';
 import { branchMessages } from '../shared/model';
+import { selectedConversations } from '../selection/selection';
 import type {
   BranchPolicy,
   Conversation,
@@ -241,10 +242,7 @@ export async function exportBundle(
   kind: 'conversations' | 'statistics',
   filter: SearchOptions | null,
 ): Promise<{ bytes: Uint8Array; filename: string; manifest: Record<string, unknown> }> {
-  const chats = dataset.conversations.filter((chat) => ids.has(chat.id));
-  if (!chats.length) throw new Error('Select at least one chat before exporting.');
-  if (chats.length !== ids.size)
-    throw new Error('Selection contains IDs absent from the source snapshot.');
+  const chats = selectedConversations(dataset.conversations, ids);
   const body =
     kind === 'conversations'
       ? chatContent(chats, format, branching)

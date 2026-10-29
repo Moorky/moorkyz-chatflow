@@ -2,6 +2,7 @@ import { IMPORT_LIMITS, importBytes } from '../importer/archive';
 import { SearchIndex } from '../search';
 import { exportBundle } from '../exports/export';
 import { statistics } from '../analytics/statistics';
+import { selectedConversations } from '../selection/selection';
 import { clearDataset, loadDataset, saveDataset } from '../storage/database';
 import { errorMessage } from '../shared/model';
 import type { WorkerRequest, WorkerResponse } from '../shared/model';
@@ -42,7 +43,7 @@ async function handle(request: WorkerRequest): Promise<void> {
         id,
         type: 'statistics',
         report: statistics(
-          index.dataset.conversations.filter((chat) => selected.has(chat.id)),
+          selectedConversations(index.dataset.conversations, selected),
           request.branching,
         ),
       });

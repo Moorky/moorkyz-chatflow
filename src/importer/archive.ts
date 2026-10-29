@@ -35,8 +35,15 @@ function directory(bytes: Uint8Array): Map<string, ArchiveEntry> {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   let end = bytes.length - 22;
   const minimum = Math.max(0, bytes.length - 65557);
-  while (end >= minimum && view.getUint32(end, true) !== 0x06054b50) end--;
-  if (end < minimum || end + 22 + view.getUint16(end + 20, true) !== bytes.length) {
+  while (end >= minimum) {
+    if (
+      view.getUint32(end, true) === 0x06054b50 &&
+      end + 22 + view.getUint16(end + 20, true) === bytes.length
+    )
+      break;
+    end--;
+  }
+  if (end < minimum) {
     throw new Error('Invalid or truncated ZIP end-of-directory.');
   }
   const count = view.getUint16(end + 10, true);

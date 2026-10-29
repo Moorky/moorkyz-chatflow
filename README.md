@@ -150,6 +150,11 @@ Each report includes all selected sources, not a top-ten shortcut.
 
 ## Development and evidence
 
+Run the complete public test/build gate with `npm run test:all`. It includes
+unit/integration coverage thresholds and the actual installed-extension example.
+See the [testing guide](docs/TESTING.md) for the behavior matrix, example provenance,
+and the separate `CHATFLOW_REAL_EXPORT` / `npm run test:real` local-data test.
+
 ```powershell
 npm run typecheck
 npm run lint
@@ -168,7 +173,7 @@ $env:CHATFLOW_TEST_PORT = '4175'
 npm run test:e2e
 ```
 
-Tests use only synthetic data: 1/100/3,000/10,000/25,000 messages, 1,000 selected
+Public tests use only synthetic data: 1/100/3,000/10,000/25,000 messages, 1,000 selected
 sources, branches, missing metadata, malformed ZIP/JSON, Unicode, Boolean
 scope differences, HTML/CSV injection counterexamples, manifest hashes, storage
 restoration/recovery, failed-import atomicity, multi-tab clearing, navigation,

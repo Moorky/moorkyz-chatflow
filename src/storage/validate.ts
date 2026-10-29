@@ -63,10 +63,12 @@ export function validDataset(value: unknown): value is Dataset {
         typeof message.nodeId !== 'string' ||
         message.conversationId !== chat.id ||
         !nullableText(message.parentId) ||
-        !['user', 'assistant', 'system', 'tool', 'unknown'].includes(String(message.role)) ||
+        typeof message.role !== 'string' ||
+        !['user', 'assistant', 'system', 'tool', 'unknown'].includes(message.role) ||
         !time(message.timestamp) ||
         typeof message.text !== 'string' ||
-        !['text', 'multimodal', 'unavailable'].includes(String(message.contentKind)) ||
+        typeof message.contentKind !== 'string' ||
+        !['text', 'multimodal', 'unavailable'].includes(message.contentKind) ||
         !strings(message.attachmentRefs) ||
         typeof message.active !== 'boolean'
       )

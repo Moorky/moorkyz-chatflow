@@ -1,3 +1,17 @@
+import type { Conversation } from '../shared/model';
+
+export function selectedConversations(
+  conversations: Conversation[],
+  ids: ReadonlySet<string>,
+): Conversation[] {
+  const chats = conversations.filter((chat) => ids.has(chat.id));
+  if (!chats.length) throw new Error('Select at least one chat before continuing.');
+  if (chats.length !== ids.size) {
+    throw new Error('Selection contains IDs absent from the source snapshot.');
+  }
+  return chats;
+}
+
 export function selectIds(
   current: ReadonlySet<string>,
   orderedIds: string[],
