@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MOORKYZ ChatFlow",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Free, local-first search and analysis of your official ChatGPT exports. Independent of OpenAI.",
   "action": { "default_title": "Open MOORKYZ ChatFlow" },
   "background": { "service_worker": "background.js" },

@@ -124,7 +124,7 @@ with Node v22.18.0 and npm 11.5.2, not results inferred from the previous turn.
 | Fresh-clone `npm ci`                                                             | NOT RUN                     | Existing pinned dependencies were present, no manifest dependencies changed, and checks had no missing-package failures.                                                                                                                                   |
 | Full V5 acceptance, live-account feasibility, store approval, independent review | NOT RUN                     | Outside this offline cleanup; still require implementation and separate approvals.                                                                                                                                                                         |
 
-Final local artifact: `artifacts/moorkyz-chatflow-0.1.0.zip`, 32,673 bytes,
+Final local artifact: `artifacts/moorkyz-chatflow-1.0.0.zip`, 32,673 bytes,
 11 files. SHA-256:
 `d58ce3baf0ba74b0c798bc484ac981a416ac7dde0f065569f1305615b00f9477`.
 Artifacts remain local generated output, not a published release.

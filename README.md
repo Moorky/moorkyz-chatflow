@@ -6,7 +6,7 @@ supported, or certified by OpenAI.
 
 ## What exists today
 
-Version **0.1.0 is an offline foundation**, built from the supplied V5 specification
+Version **1.0.0 is an offline foundation**, built from the supplied V5 specification
 and search-gap catalog. It is not the full V5 product or a store-ready release.
 
 - Import an official export ZIP, `conversations.json`, or a JSON array containing
@@ -42,6 +42,16 @@ No independent security or Chrome Web Store approval is claimed.
 
 Use Node.js **24 LTS** (Node 22.18+ is also supported) and npm.
 
+The canonical repository and checkout folder are named `moorkyz-chatflow`.
+For a new checkout:
+
+```powershell
+git clone https://github.com/Moorky/moorkyz-chatflow.git
+Set-Location moorkyz-chatflow
+```
+
+From the checkout:
+
 ```powershell
 npm ci
 npm run verify
@@ -61,7 +71,7 @@ npm run test:e2e
 3. Click the extension action to open the full local workspace.
 4. Import your own official export; do not commit real conversations to this repository.
 
-The build produces `artifacts/moorkyz-chatflow-0.1.0.zip` and a companion SHA-256
+The build produces `artifacts/moorkyz-chatflow-1.0.0.zip` and a companion SHA-256
 file. This is a local unsigned package, **not** a published or signed release.
 Package entry ordering and timestamps are fixed for reproducible packaging.
 The distribution includes `THIRD_PARTY_NOTICES.txt`, generated from the installed
