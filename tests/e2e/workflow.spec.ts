@@ -3,6 +3,12 @@ import { readFile } from 'node:fs/promises';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { conversation } from '../fixtures/synthetic';
 
+test('sidebar displays the package version', async ({ page }) => {
+  const packageMetadata = JSON.parse(await readFile('package.json', 'utf8')) as { version: string };
+  await page.goto('/');
+  await expect(page.locator('.version')).toHaveText(packageMetadata.version);
+});
+
 test('imports, distinguishes search scope, navigates hits, persists, exports and clears', async ({
   page,
   baseURL,

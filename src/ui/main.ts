@@ -19,7 +19,7 @@ import { demoExport } from './demo';
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <aside class="sidebar">
-    <a class="brand" href="#" aria-label="MOORKYZ ChatFlow home"><span class="brand-icon" aria-hidden="true">CF</span><span>MOORKYZ<strong>ChatFlow<span class="version">0.1</span></strong></span></a>
+    <a class="brand" href="#" aria-label="MOORKYZ ChatFlow home"><span class="brand-icon" aria-hidden="true">CF</span><span>MOORKYZ<strong>ChatFlow<span class="version">${__APP_VERSION__}</span></strong></span></a>
     <p class="eyebrow sidebar-label">YOUR WORKSPACE</p>
     <a class="nav-link active" href="#library"><span aria-hidden="true">&#9638;</span> Conversation library</a>
     <div class="sidebar-card"><span class="status-dot"></span><strong>Offline, by design.</strong><p>Your conversations stay on this device. No account connection. No tracking. No subscriptions.</p></div>
