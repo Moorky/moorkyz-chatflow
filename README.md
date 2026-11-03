@@ -207,6 +207,8 @@ The bundled fflate dependency's MIT license and attribution are retained in both
 the installed package and the generated extension distribution.
 
 Tracked self-audit and verification evidence:
-[offline foundation cleanup audit](.audits/2026-10-29-offline-foundation.md).
+[offline foundation cleanup audit](.audits/2026-10-29-offline-foundation.md),
+[publication audit](.audits/2026-11-03-publication-audit.md), and
+[main-branch history integration audit](.audits/2026-11-03-main-branch-integration.md).
 An audit records actual results and outstanding release gates; passing tests
 does not imply independent review or publication approval.
