@@ -34,8 +34,9 @@ and search-gap catalog. It is not the full V5 product or a store-ready release.
 **Not implemented:** PDF, advanced export splits, first/last N _message_ export,
 saved sets/searches, full timezone selection, fuzzy/semantic/field syntax,
 redaction, attachment-file export, resumable import/cancel, or any live-account
-mutation. These remain in the V5 backlog. The template's full maintenance CLI,
-generated documentation website, and agent scheduler have not been adopted.
+mutation. These remain in the V5 backlog. The template's full maintenance CLI
+and generated documentation website have not been adopted; this repository uses
+a compact local task scheduler.
 No independent security or Chrome Web Store approval is claimed.
 
 ## Build and install
