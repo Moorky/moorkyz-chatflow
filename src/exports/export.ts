@@ -82,6 +82,7 @@ function chatContent(chats: Conversation[], format: ExportFormat, branching: Bra
         'role',
         'timestamp_utc',
         'text',
+        'content_kind',
         'coverage_warnings',
       ],
     ];
@@ -92,6 +93,7 @@ function chatContent(chats: Conversation[], format: ExportFormat, branching: Bra
         chat.title,
         chat.originalUrl,
         chat.project,
+        '',
         '',
         '',
         '',
@@ -110,6 +112,7 @@ function chatContent(chats: Conversation[], format: ExportFormat, branching: Bra
           message.timestamp,
           message.text,
           message.contentKind,
+          '',
         ]);
       }
     }

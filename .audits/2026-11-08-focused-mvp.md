@@ -96,3 +96,23 @@ was unchanged by that correction.
 Recommendation: **NO-GO for public release** until license, remote CI on the
 final SHA, and owner publication decisions are complete. Local build and tests
 are green.
+
+## Addendum — 2026-11-08, release follow-up (`CHATFLOW-REL-01`)
+
+The open items above were later resolved on the owner's instruction ("Do all
+that for me, license should be apache 2.0"):
+
+- **CF-03:** Apache-2.0 `LICENSE` (canonical text) and `NOTICE` (copyright 2026
+  Moorkyz) added and shipped in every package (`4059f12`).
+- **CF-35:** remote Windows/Ubuntu CI on Node 24 is green for the release
+  candidates. The release SHA and run IDs are recorded in the release notes.
+- **CF-44:** an independent auditor agent assessed `cf302f2` from a fresh clone
+  and installed the release ZIP in a clean offline Chromium profile. It found no
+  Critical/High defects; see
+  [the independent assessment](2026-11-08-independent-release-assessment.md).
+  Its Medium/Low findings were resolved afterwards (F-01 re-verification on the
+  final SHA, F-02 synthetic-only disclosure, F-04 `master` fast-forward, F-05
+  release ZIP built from a clean clone, F-06 release wording, F-07 this addendum,
+  F-08 CSV column, F-09 UTF-8 message, F-11 packager checks).
+- Still open: real-export smoke test (CF-33, NOT RUN) and a manual screen-reader
+  check (F-03). Both are disclosed as limitations.

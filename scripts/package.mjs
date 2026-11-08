@@ -4,8 +4,19 @@ import { createHash } from 'node:crypto';
 import { zipSync } from 'fflate';
 
 const manifest = JSON.parse(await readFile('dist/manifest.json', 'utf8'));
-if (manifest.manifest_version !== 3 || manifest.permissions || manifest.host_permissions) {
-  throw new Error('Offline package must be Manifest V3 with no account/host permissions.');
+if (
+  manifest.manifest_version !== 3 ||
+  manifest.permissions ||
+  manifest.host_permissions ||
+  manifest.optional_permissions ||
+  manifest.optional_host_permissions ||
+  manifest.content_scripts ||
+  manifest.externally_connectable ||
+  manifest.web_accessible_resources
+) {
+  throw new Error(
+    'Offline package must be Manifest V3 with no permissions, content scripts or external exposure.',
+  );
 }
 for (const entry of [
   'index.html',

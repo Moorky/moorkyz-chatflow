@@ -115,8 +115,14 @@ npm run test:e2e
 4. Import your own official export; do not commit real conversations to this repository.
 
 The build produces `artifacts/moorkyz-chatflow-1.0.0.zip` and a companion SHA-256
-file. Tagged GitHub releases attach this ZIP and its `.sha256` file. The package is
-unsigned and is **not** published in the Chrome Web Store; load it unpacked.
+file. The owner attaches a ZIP and `.sha256` built from a clean checkout of the tagged
+commit to each GitHub release by hand; there is no automated release workflow. The
+package is unsigned and is **not** published in the Chrome Web Store; load it unpacked.
+
+**Compatibility evidence:** automated and audit testing used only synthetic,
+official-export-shaped data. No real ChatGPT export has been tested yet, so
+ChatGPT export schema changes or rare variants may be rejected. A rejected import
+leaves your existing library unchanged.
 Package entry ordering and timestamps are fixed for reproducible packaging.
 The distribution includes `THIRD_PARTY_NOTICES.txt`, generated from the installed
 bundled dependency's version and license; packaging fails if its license is absent.
@@ -260,7 +266,8 @@ Tracked self-audit and verification evidence:
 [offline foundation cleanup audit](.audits/2026-10-29-offline-foundation.md),
 [publication audit](.audits/2026-11-03-publication-audit.md),
 [main-branch history integration audit](.audits/2026-11-03-main-branch-integration.md), and
-[focused MVP audit](.audits/2026-11-08-focused-mvp.md).
+[focused MVP audit](.audits/2026-11-08-focused-mvp.md), and the
+[independent release assessment](.audits/2026-11-08-independent-release-assessment.md).
 An audit records actual results and outstanding release gates; passing tests
 does not imply independent review or publication approval.
 

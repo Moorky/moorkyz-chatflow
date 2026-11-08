@@ -7,6 +7,9 @@ All notable changes to MOORKYZ ChatFlow are recorded here.
 First public MVP release: a local-first Chromium MV3 extension for exploring
 official ChatGPT exports. Not a Chrome Web Store release.
 
+**Known limitation:** compatibility was verified only with synthetic,
+official-export-shaped data. No real ChatGPT export has been tested.
+
 ### License
 
 - Licensed under Apache-2.0 (`LICENSE`, `NOTICE`, `package.json`). Every packaged
@@ -37,6 +40,11 @@ official ChatGPT exports. Not a Chrome Web Store release.
   - A failed clear no longer leaves search controls disabled; statistics source
     lists render in linear time; Boolean checks short-circuit on the first
     literal match; ESLint ignores generated `coverage/` output.
+- Findings from the independent release audit: invalid UTF-8 imports report an
+  actionable message; conversation CSV exports have a separate `content_kind`
+  column instead of putting content kind under `coverage_warnings`; packaging
+  also refuses optional permissions, content scripts, `externally_connectable`
+  and `web_accessible_resources`.
 
 ### Added
 
