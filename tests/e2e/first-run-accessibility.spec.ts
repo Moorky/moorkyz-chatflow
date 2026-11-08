@@ -98,6 +98,36 @@ test('search help and no-result explanations are disclosed progressively', async
   await expect(empty).toContainText('Source: synthetic-demo-conversations.json');
 });
 
+test('a committed import refreshes the inventory even when the retained query is invalid', async ({
+  page,
+}) => {
+  await page.goto('/');
+  await page.getByLabel('Search query', { exact: true }).fill('role:user');
+  await page.locator('#import-file').setInputFiles({
+    name: 'synthetic.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify([conversation('one', ['alpha']), conversation('two', ['beta', 'gamma'])]),
+    ),
+  });
+  await expect(page.getByRole('alert')).toContainText('Field syntax is not supported');
+  await expect(page.locator('#chat-count')).toHaveText('2');
+  await expect(page.locator('#message-count')).toHaveText('3');
+  await expect(page.locator('#welcome')).toBeHidden();
+  await expect(page.locator('#coverage')).toContainText('Local snapshot: synthetic.json');
+});
+
+test('sidebar actions stay reachable in a short desktop viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 900, height: 400 });
+  await page.goto('/');
+  const privacy = page.getByRole('button', { name: 'Privacy & limitations' });
+  await privacy.scrollIntoViewIfNeeded();
+  await expect(privacy).toBeInViewport();
+  await privacy.click();
+  await expect(page.locator('#action-dialog')).toBeVisible();
+  await expect(page.locator('#action-body')).toContainText('not encrypted');
+});
+
 test('core screens have no serious or critical automated accessibility violations', async ({
   page,
 }) => {

@@ -43,7 +43,9 @@ export function validDataset(value: unknown): value is Dataset {
       typeof chat.title !== 'string' ||
       !nullableText(chat.originalUrl) ||
       (chat.originalUrl !== null &&
-        (verifiedChatUrl(chat.originalUrl) !== chat.originalUrl ||
+        (typeof chat.originalId !== 'string' ||
+          !chat.originalId ||
+          verifiedChatUrl(chat.originalUrl) !== chat.originalUrl ||
           new URL(chat.originalUrl).pathname !== `/c/${chat.originalId}`)) ||
       !nullableText(chat.project) ||
       !time(chat.createdAt) ||

@@ -1,6 +1,6 @@
 import { branchMessages } from '../shared/model';
 import type { Dataset, Hit, Message, SearchOptions, SearchResult } from '../shared/model';
-import { evaluate, occurrences, parseQuery, positiveTerms } from './query';
+import { contains, evaluate, occurrences, parseQuery, positiveTerms } from './query';
 
 function inRange(message: Message, options: SearchOptions): boolean {
   if (options.role !== 'all' && message.role !== options.role) return false;
@@ -72,8 +72,7 @@ export class SearchIndex {
       ) {
         continue;
       }
-      const match = (text: string, term: string) =>
-        occurrences(text, term, options.caseSensitive).length > 0;
+      const match = (text: string, term: string) => contains(text, term, options.caseSensitive);
       if (
         options.scope === 'conversation' &&
         !evaluate(query, (term) => candidates.some((candidate) => match(candidate.text, term)))
@@ -92,7 +91,8 @@ export class SearchIndex {
         const offsets = [
           ...new Map(ranges.map((range) => [`${range.start}:${range.end}`, range])).values(),
         ].sort((a, b) => a.start - b.start || a.end - b.end);
-        if (query && !offsets.length && terms.length && options.scope === 'conversation') continue;
+        // Chat-scope messages need positive text evidence; otherwise the chat is included by query logic.
+        if (query && !offsets.length && options.scope === 'conversation') continue;
         hits.push({
           sourceExportId: this.dataset.sourceExportId,
           chatId: chat.id,
@@ -106,6 +106,7 @@ export class SearchIndex {
       }
       const qualifiesWithoutEvidence =
         options.scope === 'conversation' ||
+        !query ||
         candidates.some((candidate) => evaluate(query, (term) => match(candidate.text, term)));
       if (!hits.length && qualifiesWithoutEvidence && (query || metadataOnly || !messages.length)) {
         hits.push({

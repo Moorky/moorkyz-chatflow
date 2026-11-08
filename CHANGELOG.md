@@ -22,6 +22,21 @@ official ChatGPT exports. Not a Chrome Web Store release.
   URL and dependency ranges.
 - The sidebar brand link's accessible name now matches its visible text
   (WCAG 2.5.3 Label in Name).
+- Findings from the PR #1 code review, each covered by a counterexample test
+  that failed before the fix:
+  - Supplied non-string or blank `parent` values are rejected instead of
+    silently turning a node into a root.
+  - With **Anywhere in chat**, NOT-only queries no longer report every message
+    as a matching message; such chats are listed by query logic.
+  - An empty **Messages only** search lists chats that have no messages under
+    the branch policy, so they stay selectable.
+  - Restored snapshots with a source URL but no official chat ID are rejected.
+  - Import counts and the welcome panel refresh when an import commits, even if
+    the retained query is invalid.
+  - Short desktop viewports can scroll the sidebar to reach its actions.
+  - A failed clear no longer leaves search controls disabled; statistics source
+    lists render in linear time; Boolean checks short-circuit on the first
+    literal match; ESLint ignores generated `coverage/` output.
 
 ### Added
 

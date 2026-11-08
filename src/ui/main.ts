@@ -56,7 +56,7 @@ app.innerHTML = `
           <p><strong>Syntax.</strong> <code>(search OR migration) AND NOT draft</code> &middot; <code>"exact phrase"</code> &middot; adjacent words mean AND &middot; precedence NOT &gt; AND &gt; OR. Literal text matching, not fuzzy or semantic.</p>
           <p><strong>Same message</strong> requires the whole query to match inside one message (or the title on its own). <strong>Anywhere in chat</strong> lets terms match different messages of one conversation; NOT then excludes the whole chat.</p>
           <p><strong>Active path</strong> searches the answers you kept in each chat. <strong>All branches</strong> also searches edited prompts and regenerated answers you moved away from; shared earlier messages count once.</p>
-          <p><strong>Counts.</strong> Matching chats are conversations the query selects. Matching messages are the message hits listed for those chats: with Same message each one satisfies the whole query; with Anywhere in chat each one contains a searched term (a query of only NOT terms lists every candidate message). Text occurrences count literal matches of searched (non-NOT) terms inside those hits only, including a title hit when titles are searched.</p>
+          <p><strong>Counts.</strong> Matching chats are conversations the query selects. Matching messages are the message hits listed for those chats: with Same message each one satisfies the whole query; with Anywhere in chat each one contains a searched term (chats included only through NOT are listed by query logic, without message hits). Text occurrences count literal matches of searched (non-NOT) terms inside those hits only, including a title hit when titles are searched.</p>
           <p>Role and date filters (under More filters) narrow candidate messages before matching. Dates are UTC message times, not chat creation dates.</p>
         </div></details>
       </section>
@@ -244,11 +244,25 @@ function snippet(text: string, hit: Hit): string {
 function formatTime(value: string | null): string {
   return value ? `${value.slice(0, 10)} UTC` : 'Date unknown';
 }
+function warningCount(current: Dataset): number {
+  return current.conversations.reduce((sum, chat) => sum + chat.warnings.length, 0);
+}
+// Dataset-derived counts must refresh even when the follow-up search fails.
+function renderInventory() {
+  if (!dataset) return;
+  element('welcome').hidden = true;
+  element('chat-count').textContent = dataset.conversations.length.toLocaleString();
+  element('message-count').textContent = dataset.conversations
+    .reduce((sum, chat) => sum + branchMessages(chat, branching()).length, 0)
+    .toLocaleString();
+  element('coverage').textContent =
+    `Local snapshot: ${dataset.sourceName} | Imported ${formatTime(dataset.importedAt)} | ${warningCount(dataset)} integrity warnings | Live-account coverage unknown`;
+  updateControls();
+}
 function renderResults() {
   updateControls();
   if (!dataset || !result) return;
-  element('welcome').hidden = true;
-  element('chat-count').textContent = dataset.conversations.length.toLocaleString();
+  renderInventory();
   element('message-count').textContent = result.indexedMessages.toLocaleString();
   element('hit-count').textContent =
     `${result.groups.length.toLocaleString()} / ${result.messageCount.toLocaleString()}`;
@@ -256,9 +270,7 @@ function renderResults() {
     `${result.occurrenceCount.toLocaleString()} text occurrences`;
   element('results-summary').textContent =
     `${result.groups.length} matching chats. ${selected.size} selected across the library.`;
-  const warnings = dataset.conversations.reduce((sum, chat) => sum + chat.warnings.length, 0);
-  element('coverage').textContent =
-    `Local snapshot: ${dataset.sourceName} | Imported ${formatTime(dataset.importedAt)} | ${warnings} integrity warnings | Live-account coverage unknown`;
+  const warnings = warningCount(dataset);
   const container = element('results');
   container.replaceChildren();
   if (!result.groups.length) {
@@ -395,6 +407,7 @@ async function importFile(file: File) {
     result = null;
     input('within-selection').checked = false;
     busy = false;
+    renderInventory();
     await runSearch();
     announce(
       `Imported ${dataset.conversations.length} chats. Original source file unchanged. Snapshot saved on this device.`,
@@ -514,9 +527,10 @@ function selectedChats(): Conversation[] {
   return dataset?.conversations.filter((chat) => selected.has(chat.id)) ?? [];
 }
 function sourceList(report?: Statistics): string {
+  const sources = new Map(report?.sources.map((source) => [source.id, source]) ?? []);
   return `<h3>All selected chats (${selected.size})</h3><ul class="source-list">${selectedChats()
     .map((chat) => {
-      const source = report?.sources.find((source) => source.id === chat.id);
+      const source = sources.get(chat.id);
       return `<li><strong>${escapeHtml(chat.title)}</strong><span>${escapeHtml(chat.id)} &middot; ${escapeHtml(chat.project ?? 'Project unknown')} &middot; ${branchMessages(chat, branching()).length} messages</span>${source ? `<span>First: ${formatTime(source.firstMessageAt)} / Last: ${formatTime(source.lastMessageAt)} / Missing times: ${source.missingTimestamps}</span><span>${source.words} words / ${source.characters} codepoints / Roles: ${escapeHtml(JSON.stringify(source.roles))}</span>` : ''}<span>${chat.warnings.length} coverage warnings / Selection: explicit checkbox or selection command</span>${chat.originalUrl ? `<a href="${escapeHtml(chat.originalUrl)}" target="_blank" rel="noreferrer noopener">Source URL (access not checked)</a>` : '<span>Original link unavailable: no valid URL supplied by source</span>'}</li>`;
     })
     .join('')}</ul>`;
@@ -697,6 +711,7 @@ button('forget').addEventListener('click', () => {
         element<HTMLDialogElement>('action-dialog').close();
         showError(error);
         busy = false;
+        searching = false;
         updateControls();
       }
     })();
@@ -710,6 +725,7 @@ void (async () => {
     const response = await request({ type: 'restore' });
     if (response.type === 'dataset') dataset = response.dataset;
     busy = false;
+    renderInventory();
     if (dataset) await runSearch();
     else announce('Ready for your first import. Everything stays on this device.');
   } catch (error) {

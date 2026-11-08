@@ -51,6 +51,9 @@ function normalizeChat(value: unknown, position: number): Conversation {
     nodes.set(nodeId, node);
   }
   for (const [nodeId, node] of nodes) {
+    if (node.parent !== null && node.parent !== undefined && !text(node.parent)) {
+      throw new Error(`Invalid parent reference at node ${nodeId} in ${id}.`);
+    }
     const parent = text(node.parent);
     if (parent && !nodes.has(parent)) throw new Error(`Missing parent ${parent} in ${id}.`);
     const siblings = children.get(parent) ?? [];

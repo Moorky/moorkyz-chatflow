@@ -146,13 +146,15 @@ canonical-equivalence normalization are not yet provided.
 - Role/date filters restrict the candidate messages _before_ Boolean evaluation.
   Title matching remains an independent document, provided at least one message
   passes any active role/date filter.
-- Negative-only queries can produce zero text occurrences; qualifying messages
-  still have IDs. Conversation-level inclusion without a positive text witness
-  is labeled as query-logic inclusion, not a fabricated message match.
+- Negative-only queries can produce zero text occurrences. With **Same message**,
+  qualifying messages still have IDs. With **Anywhere in chat**, a message is a hit
+  only with positive text evidence; a chat included without one is labeled as
+  query-logic inclusion, not a fabricated message match.
 - Dates apply to **messages**, not chat creation/update timestamps. From/through
   dates are inclusive UTC calendar days, implemented as `[start, next-day)`.
   Undated messages are excluded only when a date filter is active.
-- Empty search lists the imported branch-policy scope. Unknown field syntax is
+- Empty search lists the imported branch-policy scope, including chats with no
+  messages under that policy. Unknown field syntax is
   an explicit error. Quote literal colons, e.g. `"https://example.com"`.
 - First/last N selects **chats**, adding to the current selection. Unknown dates
   sort last; ties break by stable chat ID. Source order is the default.
