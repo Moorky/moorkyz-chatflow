@@ -56,7 +56,7 @@ app.innerHTML = `
           <p><strong>Syntax.</strong> <code>(search OR migration) AND NOT draft</code> &middot; <code>"exact phrase"</code> &middot; adjacent words mean AND &middot; precedence NOT &gt; AND &gt; OR. Literal text matching, not fuzzy or semantic.</p>
           <p><strong>Same message</strong> requires the whole query to match inside one message (or the title on its own). <strong>Anywhere in chat</strong> lets terms match different messages of one conversation; NOT then excludes the whole chat.</p>
           <p><strong>Active path</strong> searches the answers you kept in each chat. <strong>All branches</strong> also searches edited prompts and regenerated answers you moved away from; shared earlier messages count once.</p>
-          <p><strong>Counts.</strong> Matching chats are conversations the query selects. Matching messages are messages shown as hits: with Same message each one satisfies the whole query; with Anywhere in chat each one contains at least one searched term. Text occurrences count every literal match of a searched (non-NOT) term, titles included.</p>
+          <p><strong>Counts.</strong> Matching chats are conversations the query selects. Matching messages are the message hits listed for those chats: with Same message each one satisfies the whole query; with Anywhere in chat each one contains a searched term (a query of only NOT terms lists every candidate message). Text occurrences count literal matches of searched (non-NOT) terms inside those hits only, including a title hit when titles are searched.</p>
           <p>Role and date filters (under More filters) narrow candidate messages before matching. Dates are UTC message times, not chat creation dates.</p>
         </div></details>
       </section>

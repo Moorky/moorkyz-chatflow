@@ -39,7 +39,8 @@ one.
 
 ### CHATFLOW-MVP-01 — Focused portfolio MVP (local work)
 
-- **State:** IN_PROGRESS
+- **State:** DONE (local scope). Owner-gated items below remain open; evidence in
+  [.audits/2026-11-08-focused-mvp.md](.audits/2026-11-08-focused-mvp.md).
 - **Owner/session:** @Moorky request; Copilot agent session 2026-11-08.
 - **Source:** owner-supplied `MOORKYZ_ChatFlow_Focused_MVP_Roadmap_EN.md`
   (focused MVP, CF-00 to CF-44). The full V5 backlog stays out of scope.
