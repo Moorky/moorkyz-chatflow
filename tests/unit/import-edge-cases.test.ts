@@ -151,7 +151,13 @@ describe('archive validation matrix', () => {
   it('accepts BOM-prefixed JSON and rejects invalid UTF-8 before parsing', async () => {
     const data = await importBytes(strToU8('\uFEFF[]'), 'bom.json');
     expect(data.conversations).toEqual([]);
-    await expect(importBytes(new Uint8Array([0xff, 0xfe, 0x7b]), 'invalid.json')).rejects.toThrow();
+    await expect(importBytes(new Uint8Array([0xff, 0xfe, 0x7b]), 'invalid.json')).rejects.toThrow(
+      'The JSON file is not valid UTF-8 text.',
+    );
+    const zipped = zipSync({ 'conversations.json': new Uint8Array([0x5b, 0xff, 0x5d]) });
+    await expect(importBytes(zipped, 'invalid.zip')).rejects.toThrow(
+      'conversations.json is not valid UTF-8 text.',
+    );
   });
 
   it('imports all supported segment naming variants in natural filename order', async () => {

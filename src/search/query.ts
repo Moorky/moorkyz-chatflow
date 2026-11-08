@@ -119,10 +119,18 @@ export function positiveTerms(query: Query | null, negated = false): string[] {
   ];
 }
 
-export function occurrences(text: string, term: string, caseSensitive: boolean) {
+function literalPattern(term: string, caseSensitive: boolean, global: boolean): RegExp {
   const pattern = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return [...text.matchAll(new RegExp(pattern, caseSensitive ? 'gu' : 'giu'))].map((match) => ({
+  return new RegExp(pattern, `${global ? 'g' : ''}${caseSensitive ? 'u' : 'iu'}`);
+}
+
+export function occurrences(text: string, term: string, caseSensitive: boolean) {
+  return [...text.matchAll(literalPattern(term, caseSensitive, true))].map((match) => ({
     start: match.index,
     end: match.index + match[0].length,
   }));
+}
+
+export function contains(text: string, term: string, caseSensitive: boolean): boolean {
+  return literalPattern(term, caseSensitive, false).test(text);
 }

@@ -4,6 +4,43 @@
 for exploring official ChatGPT exports. Independent of OpenAI; not developed,
 supported, or certified by OpenAI.
 
+> Explore and export your ChatGPT conversation history locally, without uploading
+> your archive to another service.
+
+This works on official export files you import yourself. It is not a live account
+sync, not a guaranteed full backup, and it does not preserve images, files, or audio.
+
+## Quickstart (about 3 minutes)
+
+1. Build and load the extension (Node.js 24 LTS recommended, 22.18+ supported):
+
+   ```powershell
+   npm ci
+   npm run build
+   ```
+
+   Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**,
+   and select the generated `dist` folder. Click the ChatFlow toolbar action.
+
+2. Click **Explore with synthetic demo data** to try every feature with four
+   fictional conversations. A banner marks them as demo data.
+3. Search for `migration`, open the hit, select the chat, then use **Statistics**
+   or **Export selection** to download a ZIP with a SHA-256 manifest.
+4. For your own history: in ChatGPT open **Settings → Data controls → Export data**,
+   download the ZIP from the email link, and choose **+ Import ChatGPT export**.
+   The same steps are shown in the app under **How to get your export**.
+5. **Clear local data** removes the saved snapshot from this browser profile.
+
+### Troubleshooting
+
+| Symptom                                     | What to do                                                                                                                                                      |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Import rejected                             | Read the error text. Unsupported schemas, ZIP64/encrypted ZIPs, and files over the input budgets are refused. Your previously imported library stays unchanged. |
+| A conversation you expect is not found      | Try **Anywhere in chat**, **All branches**, or fewer filters. The no-results panel lists what was searched. A snapshot only contains what the export contained. |
+| A stored library cannot be read             | Use **Clear local data**, then import the export again. The original export file is never modified.                                                             |
+| `npm ci` fails with `EINTEGRITY`            | Use the committed `package-lock.json` unchanged and a clean npm cache. Do not bypass integrity checks.                                                          |
+| Browser tests report that port 4173 is busy | Set `CHATFLOW_TEST_PORT` to a free port; tests never take over an existing server.                                                                              |
+
 ## What exists today
 
 Version **1.0.0 is an offline foundation**, built from the supplied V5 specification
@@ -29,7 +66,12 @@ and search-gap catalog. It is not the full V5 product or a store-ready release.
   JSON/CSV/HTML (TXT contains a JSON-formatted statistics report). Each download is
   a ZIP with a SHA-256 manifest, source/query fingerprints, counts, and warnings.
 - Hide preview text, use keyboard-accessible controls, and browse light/dark,
-  reduced-motion, and responsive layouts. Try the explicitly synthetic demo.
+  reduced-motion, and responsive layouts. Try the explicitly synthetic demo; a
+  banner labels it as fictional data until your own export replaces it.
+- First-run guidance explains how to obtain an official export and the input
+  limits. Search help, scope/branch explanations, and advanced filters are
+  collapsed by default. No-results panels list the query, scope, branch policy,
+  and filters that were applied.
 
 **Not implemented:** PDF, advanced export splits, first/last N _message_ export,
 saved sets/searches, full timezone selection, fuzzy/semantic/field syntax,
@@ -73,7 +115,14 @@ npm run test:e2e
 4. Import your own official export; do not commit real conversations to this repository.
 
 The build produces `artifacts/moorkyz-chatflow-1.0.0.zip` and a companion SHA-256
-file. This is a local unsigned package, **not** a published or signed release.
+file. The owner attaches a ZIP and `.sha256` built from a clean checkout of the tagged
+commit to each GitHub release by hand; there is no automated release workflow. The
+package is unsigned and is **not** published in the Chrome Web Store; load it unpacked.
+
+**Compatibility evidence:** automated and audit testing used only synthetic,
+official-export-shaped data. No real ChatGPT export has been tested yet, so
+ChatGPT export schema changes or rare variants may be rejected. A rejected import
+leaves your existing library unchanged.
 Package entry ordering and timestamps are fixed for reproducible packaging.
 The distribution includes `THIRD_PARTY_NOTICES.txt`, generated from the installed
 bundled dependency's version and license; packaging fails if its license is absent.
@@ -103,13 +152,15 @@ canonical-equivalence normalization are not yet provided.
 - Role/date filters restrict the candidate messages _before_ Boolean evaluation.
   Title matching remains an independent document, provided at least one message
   passes any active role/date filter.
-- Negative-only queries can produce zero text occurrences; qualifying messages
-  still have IDs. Conversation-level inclusion without a positive text witness
-  is labeled as query-logic inclusion, not a fabricated message match.
+- Negative-only queries can produce zero text occurrences. With **Same message**,
+  qualifying messages still have IDs. With **Anywhere in chat**, a message is a hit
+  only with positive text evidence; a chat included without one is labeled as
+  query-logic inclusion, not a fabricated message match.
 - Dates apply to **messages**, not chat creation/update timestamps. From/through
   dates are inclusive UTC calendar days, implemented as `[start, next-day)`.
   Undated messages are excluded only when a date filter is active.
-- Empty search lists the imported branch-policy scope. Unknown field syntax is
+- Empty search lists the imported branch-policy scope, including chats with no
+  messages under that policy. Unknown field syntax is
   an explicit error. Quote literal colons, e.g. `"https://example.com"`.
 - First/last N selects **chats**, adding to the current selection. Unknown dates
   sort last; ties break by stable chat ID. Source order is the default.
@@ -188,8 +239,9 @@ Public tests use only synthetic data: 1/100/3,000/10,000/25,000 messages, 1,000 
 sources, branches, missing metadata, malformed ZIP/JSON, Unicode, Boolean
 scope differences, HTML/CSV injection counterexamples, manifest hashes, storage
 restoration/recovery, failed-import atomicity, multi-tab clearing, navigation,
-downloads, four viewport widths (320/768/1024/1440), keyboard paths, and primary
-button contrast in both themes.
+downloads, five viewport widths (320/390/768/1024/1440), keyboard paths, primary
+button contrast in both themes, and an automated axe-core WCAG 2.1 A/AA scan of the
+first-run, results, viewer, and export-review screens in light and dark mode.
 The browser suite uses the production web build and also loads the real unpacked
 MV3 extension to exercise its worker, storage, and CSP. Packaging is checked
 separately. CI runs on Windows/Linux with Node 24, pinned actions, and a read-only
@@ -202,14 +254,22 @@ strict TypeScript, four-stage work/verification, ignored runtime output, explici
 permission boundaries, and evidence instead of release claims. The upstream
 template itself was not modified or wholesale copied.
 
-No license grant has been selected for this new repository. The specification
-recommends Apache-2.0 subject to owner approval; no unapproved license is assumed.
-The bundled fflate dependency's MIT license and attribution are retained in both
-the installed package and the generated extension distribution.
+## License
+
+MOORKYZ ChatFlow is licensed under the [Apache License 2.0](LICENSE).
+Copyright 2026 Moorkyz; see [NOTICE](NOTICE). The bundled fflate dependency's MIT
+license and attribution are retained in both the installed package and the
+generated extension distribution (`THIRD_PARTY_NOTICES.txt`). Every packaged
+extension also contains `LICENSE` and `NOTICE`.
 
 Tracked self-audit and verification evidence:
 [offline foundation cleanup audit](.audits/2026-10-29-offline-foundation.md),
-[publication audit](.audits/2026-11-03-publication-audit.md), and
-[main-branch history integration audit](.audits/2026-11-03-main-branch-integration.md).
+[publication audit](.audits/2026-11-03-publication-audit.md),
+[main-branch history integration audit](.audits/2026-11-03-main-branch-integration.md), and
+[focused MVP audit](.audits/2026-11-08-focused-mvp.md), and the
+[independent release assessment](.audits/2026-11-08-independent-release-assessment.md).
 An audit records actual results and outstanding release gates; passing tests
 does not imply independent review or publication approval.
+
+See also [CHANGELOG.md](CHANGELOG.md), [CONTRIBUTING.md](CONTRIBUTING.md), and
+[SECURITY.md](SECURITY.md).

@@ -208,13 +208,13 @@ test('untrusted content is inert and layout fits narrow and dark viewports', asy
   await expect(page.locator('#viewer')).not.toBeVisible();
 });
 
-test('four viewport widths, keyboard search and live result announcements remain usable', async ({
+test('five viewport widths, keyboard search and live result announcements remain usable', async ({
   page,
 }, testInfo) => {
   await page.goto('/');
   await page.getByRole('button', { name: /Explore with synthetic demo data/ }).click();
   await expect(page.locator('#chat-count')).toHaveText('4');
-  for (const width of [320, 768, 1024, 1440]) {
+  for (const width of [320, 390, 768, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,

@@ -17,6 +17,30 @@ const matrix = (['conversations', 'statistics'] as const).flatMap((kind) =>
   ),
 );
 
+describe('CSV conversation export columns', () => {
+  it('keeps content kind and coverage warnings in separately labelled columns', async () => {
+    const source = normalizeExport(
+      [[conversation('csv-chat', ['alpha'])]],
+      'c'.repeat(64),
+      'x.json',
+    );
+    source.conversations[0]!.warnings = ['synthetic warning'];
+    const bundle = await exportBundle(
+      source,
+      new Set(['csv-chat']),
+      'active-path',
+      'csv',
+      'conversations',
+      null,
+    );
+    const lines = strFromU8(unzipSync(bundle.bytes)['conversations.csv']!).trim().split(/\r?\n/);
+    const header = lines[0]!.split(',');
+    expect(header.slice(-2)).toEqual(['"content_kind"', '"coverage_warnings"']);
+    expect(lines[1]!.endsWith(',"","synthetic warning"')).toBe(true);
+    expect(lines[2]!.endsWith(',"text",""')).toBe(true);
+  });
+});
+
 describe('format, report kind and branch policy matrix', () => {
   it.each(matrix)(
     '$kind / $branching / $format preserves selection, counts and hashes',

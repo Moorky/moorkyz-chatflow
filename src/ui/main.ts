@@ -14,22 +14,23 @@ import type {
   WorkerResponse,
 } from '../shared/model';
 import { selectIds } from '../selection/selection';
-import { demoExport } from './demo';
+import { demoExport, demoFileName, isDemoDataset } from './demo';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
   <aside class="sidebar">
-    <a class="brand" href="#" aria-label="MOORKYZ ChatFlow home"><span class="brand-icon" aria-hidden="true">CF</span><span>MOORKYZ<strong>ChatFlow<span class="version">${__APP_VERSION__}</span></strong></span></a>
+    <a class="brand" href="#"><span class="brand-icon" aria-hidden="true">CF</span><span>MOORKYZ <strong>ChatFlow <span class="version">${__APP_VERSION__}</span></strong></span></a>
     <p class="eyebrow sidebar-label">YOUR WORKSPACE</p>
     <a class="nav-link active" href="#library"><span aria-hidden="true">&#9638;</span> Conversation library</a>
-    <div class="sidebar-card"><span class="status-dot"></span><strong>Offline, by design.</strong><p>Your conversations stay on this device. No account connection. No tracking. No subscriptions.</p></div>
+    <div class="sidebar-card"><span class="status-dot"></span><strong>Offline, by design.</strong><p>Your conversations stay on this device, stored unencrypted in this browser profile until you clear them. No account connection. No tracking. No subscriptions.</p></div>
     <div class="sidebar-bottom"><button id="forget" class="quiet danger" disabled>Clear local data</button><button id="privacy" class="quiet">Privacy &amp; limitations</button><p>Independent of OpenAI.<br>Free. Local. Yours.</p></div>
   </aside>
   <main id="library">
     <header class="topbar"><span class="breadcrumb">Workspace <span>/</span> Conversation library</span><span class="badge"><span class="status-dot"></span> LOCAL ONLY</span></header>
     <div class="content">
-      <section class="page-heading"><div><p class="eyebrow">A LITTLE ORDER. A LOT OF POSSIBILITY.</p><h1>Your conversations,<br><span>rediscovered.</span></h1><p class="subtitle">Find the thought. Follow the context. Keep the whole story.</p></div><button id="import-button" class="button primary">+ Import export</button><input id="import-file" type="file" accept=".json,.zip,application/json,application/zip" hidden></section>
-      <section id="welcome" class="welcome"><div class="welcome-icon" aria-hidden="true">&#8615;</div><div><h2>A fresh perspective on your chat history</h2><p>Import an official ChatGPT export ZIP or conversations JSON. Everything is processed locally, right here.</p><button id="demo" class="text-button">Explore with synthetic demo data <span aria-hidden="true">&#8594;</span></button></div><span class="pill">NO ACCOUNT REQUIRED</span></section>
+      <section class="page-heading"><div><p class="eyebrow">A LITTLE ORDER. A LOT OF POSSIBILITY.</p><h1>Your conversations,<br><span>rediscovered.</span></h1><p class="subtitle">Find the thought. Follow the context. Keep the whole story.</p></div><div class="import-action"><button id="import-button" class="button primary" aria-describedby="import-hint">+ Import ChatGPT export</button><p id="import-hint" class="import-hint">ZIP or JSON &middot; processed on this device</p></div><input id="import-file" type="file" accept=".json,.zip,application/json,application/zip" hidden></section>
+      <section id="welcome" class="welcome"><div class="welcome-icon" aria-hidden="true">&#8615;</div><div><h2>Start with your official ChatGPT export</h2><p>Import the export ZIP, its <code>conversations.json</code>, or a JSON array of conversations. Everything is processed locally, right here.</p><details class="export-guide"><summary>How to get your export</summary><ol><li>In ChatGPT, open <strong>Settings &rarr; Data controls &rarr; Export data</strong> and confirm (menu names can change).</li><li>Download the ZIP from the link OpenAI sends you by email.</li><li>Choose <strong>Import ChatGPT export</strong> and select that ZIP. Keep the original; ChatFlow never modifies it.</li></ol><p>Limits: 128 MiB per file, 256 MiB of expanded conversation JSON, 10,000 ZIP entries. Only exported text is indexed; images, files and audio are listed as references, not imported.</p></details><button id="demo" class="text-button">Explore with synthetic demo data <span aria-hidden="true">&#8594;</span></button></div><span class="pill">NO ACCOUNT REQUIRED</span></section>
+      <div id="demo-banner" class="demo-banner" role="note" hidden><strong>Synthetic demo data.</strong> These conversations are fictional examples, not your ChatGPT history. Importing your own export replaces them.</div>
       <div id="status" class="notice" role="status" aria-live="polite">Ready for your first import.</div>
       <div id="error" class="error" role="alert" hidden></div>
       <section class="metrics" aria-label="Library counts">
@@ -51,7 +52,13 @@ app.innerHTML = `
           </div></details>
           <label class="check-label discreet"><input id="discreet" type="checkbox"> Hide previews</label>
         </div></form>
-        <p class="syntax-help">Make it precise: <code>(search OR migration) AND NOT draft</code> &middot; <code>"exact phrase"</code> &middot; NOT &gt; AND &gt; OR</p>
+        <details class="search-help"><summary>How search works</summary><div class="search-help-body">
+          <p><strong>Syntax.</strong> <code>(search OR migration) AND NOT draft</code> &middot; <code>"exact phrase"</code> &middot; adjacent words mean AND &middot; precedence NOT &gt; AND &gt; OR. Literal text matching, not fuzzy or semantic.</p>
+          <p><strong>Same message</strong> requires the whole query to match inside one message (or the title on its own). <strong>Anywhere in chat</strong> lets terms match different messages of one conversation; NOT then excludes the whole chat.</p>
+          <p><strong>Active path</strong> searches the answers you kept in each chat. <strong>All branches</strong> also searches edited prompts and regenerated answers you moved away from; shared earlier messages count once.</p>
+          <p><strong>Counts.</strong> Matching chats are conversations the query selects. Matching messages are the message hits listed for those chats: with Same message each one satisfies the whole query; with Anywhere in chat each one contains a searched term (chats included only through NOT are listed by query logic, without message hits). Text occurrences count literal matches of searched (non-NOT) terms inside those hits only, including a title hit when titles are searched.</p>
+          <p>Role and date filters (under More filters) narrow candidate messages before matching. Dates are UTC message times, not chat creation dates.</p>
+        </div></details>
       </section>
       <section class="library-panel" aria-labelledby="results-heading">
         <div class="results-toolbar"><div><h2 id="results-heading">Conversation library</h2><span id="results-summary">Your next good idea might already be here.</span></div><label>Sort <select id="sort"><option value="source">Source order</option><option value="newest">Newest created</option><option value="oldest">Oldest created</option><option value="title">Title A-Z</option></select></label></div>
@@ -207,6 +214,10 @@ function updateControls() {
     button(id).disabled = !ready || !selected.size;
   }
   element('selected-count').textContent = selected.size.toLocaleString();
+  element('import-hint').textContent = dataset
+    ? 'Replaces this local library only after the new file validates and saves.'
+    : 'ZIP or JSON · processed on this device';
+  element('demo-banner').hidden = !dataset || !isDemoDataset(dataset);
   for (const checkbox of element('results').querySelectorAll<HTMLInputElement>(
     'input[type=checkbox]',
   )) {
@@ -233,25 +244,57 @@ function snippet(text: string, hit: Hit): string {
 function formatTime(value: string | null): string {
   return value ? `${value.slice(0, 10)} UTC` : 'Date unknown';
 }
+function warningCount(current: Dataset): number {
+  return current.conversations.reduce((sum, chat) => sum + chat.warnings.length, 0);
+}
+// Dataset-derived counts must refresh even when the follow-up search fails.
+function renderInventory(indexedMessages?: number) {
+  if (!dataset) return;
+  element('welcome').hidden = true;
+  element('chat-count').textContent = dataset.conversations.length.toLocaleString();
+  element('message-count').textContent = (
+    indexedMessages ??
+    dataset.conversations.reduce((sum, chat) => sum + branchMessages(chat, branching()).length, 0)
+  ).toLocaleString();
+  element('coverage').textContent =
+    `Local snapshot: ${dataset.sourceName} | Imported ${formatTime(dataset.importedAt)} | ${warningCount(dataset)} integrity warnings | Live-account coverage unknown`;
+  updateControls();
+}
 function renderResults() {
   updateControls();
   if (!dataset || !result) return;
-  element('welcome').hidden = true;
-  element('chat-count').textContent = dataset.conversations.length.toLocaleString();
-  element('message-count').textContent = result.indexedMessages.toLocaleString();
+  renderInventory(result.indexedMessages);
   element('hit-count').textContent =
     `${result.groups.length.toLocaleString()} / ${result.messageCount.toLocaleString()}`;
   element('occurrence-count').textContent =
     `${result.occurrenceCount.toLocaleString()} text occurrences`;
   element('results-summary').textContent =
     `${result.groups.length} matching chats. ${selected.size} selected across the library.`;
-  const warnings = dataset.conversations.reduce((sum, chat) => sum + chat.warnings.length, 0);
-  element('coverage').textContent =
-    `Local snapshot: ${dataset.sourceName} | Imported ${formatTime(dataset.importedAt)} | ${warnings} integrity warnings | Live-account coverage unknown`;
+  const warnings = warningCount(dataset);
   const container = element('results');
   container.replaceChildren();
   if (!result.groups.length) {
-    container.innerHTML = `<div class="empty-state"><h3>No matches in this local snapshot.</h3><p>This does not mean the chat is absent from your account.</p><p>${dataset.conversations.length} chats / ${result.indexedMessages} indexed messages. ${warnings} integrity warnings. No parser errors in committed import.</p><p>Source: ${escapeHtml(dataset.sourceName)}. Imported ${escapeHtml(dataset.importedAt)}.</p></div>`;
+    const options = lastOptions;
+    const filters = options
+      ? [
+          options.query.trim()
+            ? `query “${options.query.trim().slice(0, 120)}${options.query.trim().length > 120 ? '…' : ''}”`
+            : 'no query text',
+          options.scope === 'conversation' ? 'anywhere in chat' : 'same message',
+          options.fields === 'both'
+            ? 'titles + messages'
+            : options.fields === 'text'
+              ? 'messages only'
+              : 'titles only',
+          options.branching === 'all-branches' ? 'all branches' : 'active path',
+          options.role === 'all' ? '' : `role ${options.role}`,
+          options.startInclusive ? `from ${options.startInclusive.slice(0, 10)} UTC` : '',
+          options.endExclusive ? `before ${options.endExclusive.slice(0, 10)} UTC` : '',
+          options.caseSensitive ? 'case sensitive' : '',
+          options.selectedIds ? `only ${options.selectedIds.length} selected chats` : '',
+        ].filter(Boolean)
+      : [];
+    container.innerHTML = `<div class="empty-state"><h3>No matches in this local snapshot.</h3><p>This does not mean the chat is absent from your account.</p><p>Searched with: ${escapeHtml(filters.join(' · ') || 'default options')}. Try Anywhere in chat, All branches or fewer filters.</p><p>${dataset.conversations.length} chats / ${result.indexedMessages} indexed messages. ${warnings} integrity warnings. No parser errors in committed import.</p><p>Source: ${escapeHtml(dataset.sourceName)}. Imported ${escapeHtml(dataset.importedAt)}.</p></div>`;
   }
   const byId = new Map(dataset.conversations.map((chat) => [chat.id, chat]));
   for (const group of orderedGroups().slice(0, shownChats)) {
@@ -364,13 +407,18 @@ async function importFile(file: File) {
     result = null;
     input('within-selection').checked = false;
     busy = false;
+    renderInventory();
     await runSearch();
     announce(
       `Imported ${dataset.conversations.length} chats. Original source file unchanged. Snapshot saved on this device.`,
     );
   } catch (error) {
     showError(error);
-    announce('Import failed. The previous local snapshot has not been replaced.');
+    announce(
+      dataset
+        ? 'Import failed. The previous local library was preserved.'
+        : 'Import failed. Nothing was saved; choose a supported export file to try again.',
+    );
   } finally {
     busy = false;
     input('import-file').value = '';
@@ -479,9 +527,10 @@ function selectedChats(): Conversation[] {
   return dataset?.conversations.filter((chat) => selected.has(chat.id)) ?? [];
 }
 function sourceList(report?: Statistics): string {
+  const sources = new Map(report?.sources.map((source) => [source.id, source]) ?? []);
   return `<h3>All selected chats (${selected.size})</h3><ul class="source-list">${selectedChats()
     .map((chat) => {
-      const source = report?.sources.find((source) => source.id === chat.id);
+      const source = sources.get(chat.id);
       return `<li><strong>${escapeHtml(chat.title)}</strong><span>${escapeHtml(chat.id)} &middot; ${escapeHtml(chat.project ?? 'Project unknown')} &middot; ${branchMessages(chat, branching()).length} messages</span>${source ? `<span>First: ${formatTime(source.firstMessageAt)} / Last: ${formatTime(source.lastMessageAt)} / Missing times: ${source.missingTimestamps}</span><span>${source.words} words / ${source.characters} codepoints / Roles: ${escapeHtml(JSON.stringify(source.roles))}</span>` : ''}<span>${chat.warnings.length} coverage warnings / Selection: explicit checkbox or selection command</span>${chat.originalUrl ? `<a href="${escapeHtml(chat.originalUrl)}" target="_blank" rel="noreferrer noopener">Source URL (access not checked)</a>` : '<span>Original link unavailable: no valid URL supplied by source</span>'}</li>`;
     })
     .join('')}</ul>`;
@@ -559,9 +608,7 @@ input('import-file').addEventListener('change', () => {
   if (file) void importFile(file);
 });
 button('demo').addEventListener('click', () => {
-  void importFile(
-    new File([demoExport()], 'synthetic-demo-conversations.json', { type: 'application/json' }),
-  );
+  void importFile(new File([demoExport()], demoFileName, { type: 'application/json' }));
 });
 for (const [id, mode] of [
   ['select-all', 'all'],
@@ -643,7 +690,7 @@ button('stats').addEventListener('click', () => {
 button('privacy').addEventListener('click', () =>
   showAction(
     'Local-first means local.',
-    '<p>ChatFlow stores one imported snapshot in IndexedDB in this browser profile. Searches are not saved. Nothing is sent to a server. There are no host permissions, analytics, ads, account credentials, or live actions.</p><p>Importing replaces the previous snapshot only after validation and a successful database transaction. A failed import keeps the previous snapshot. Clear local data removes the saved snapshot and in-memory index; original source files and downloads are untouched.</p><p>This is an offline foundation, not the complete V5 product. PDF, semantic search, saved sets, redaction, advanced splitting and live organizing remain future work. Only available exported text can be indexed; attachment bytes are not copied. Safety budgets: 128 MiB input, 256 MiB expanded conversation JSON, 10,000 ZIP entries.</p><p>URLs are accepted only from source data after HTTPS/host/path checks. Account access is not checked. Missing links and timestamps are never invented. Source messages are displayed as text, never executed.</p><p>Independent tool, not developed, supported or certified by OpenAI.</p>',
+    '<p>ChatFlow stores one imported snapshot in IndexedDB in this browser profile. The snapshot is <strong>not encrypted</strong>; anyone with access to this browser profile can read it until you clear it. Searches are not saved. Nothing is sent to a server. There are no host permissions, analytics, ads, account credentials, or live actions.</p><p>Importing replaces the previous snapshot only after validation and a successful database transaction. A failed import keeps the previous snapshot. Clear local data removes the saved snapshot and in-memory index; original source files and downloads are untouched.</p><p>This is an offline foundation, not the complete V5 product. PDF, semantic search, saved sets, redaction, advanced splitting and live organizing remain future work. Only available exported text can be indexed; attachment bytes are not copied. Safety budgets: 128 MiB input, 256 MiB expanded conversation JSON, 10,000 ZIP entries.</p><p>URLs are accepted only from source data after HTTPS/host/path checks. Account access is not checked. Missing links and timestamps are never invented. Source messages are displayed as text, never executed.</p><p>Independent tool, not developed, supported or certified by OpenAI.</p>',
   ),
 );
 button('forget').addEventListener('click', () => {
@@ -664,6 +711,7 @@ button('forget').addEventListener('click', () => {
         element<HTMLDialogElement>('action-dialog').close();
         showError(error);
         busy = false;
+        searching = false;
         updateControls();
       }
     })();
@@ -677,6 +725,7 @@ void (async () => {
     const response = await request({ type: 'restore' });
     if (response.type === 'dataset') dataset = response.dataset;
     busy = false;
+    renderInventory();
     if (dataset) await runSearch();
     else announce('Ready for your first import. Everything stays on this device.');
   } catch (error) {

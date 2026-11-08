@@ -123,7 +123,7 @@ export function readArchive(bytes: Uint8Array): string[] {
         throw new Error('ZIP expansion safety limit exceeded.');
       }
       for (const byte of chunk) crc = (crc >>> 8) ^ crcTable[(crc ^ byte) & 255]!;
-      chunks.push(decoder.decode(chunk, { stream: !final }));
+      chunks.push(decodeUtf8(decoder, chunk, file.name, !final));
       if (final) {
         if ((crc ^ 0xffffffff) >>> 0 !== entry.crc || fileSize !== entry.size) {
           throw new Error(`ZIP integrity check failed for ${file.name}.`);
@@ -149,6 +149,22 @@ export function readArchive(bytes: Uint8Array): string[] {
     .map(([, value]) => value);
 }
 
+function decodeUtf8(
+  decoder: TextDecoder,
+  bytes: Uint8Array,
+  label: string,
+  stream = false,
+): string {
+  try {
+    return decoder.decode(bytes, { stream });
+  } catch (error) {
+    throw new Error(
+      `${label} is not valid UTF-8 text. Use the unmodified official export file; no data was replaced.`,
+      { cause: error },
+    );
+  }
+}
+
 export async function importBytes(
   bytes: Uint8Array,
   name: string,
@@ -161,7 +177,9 @@ export async function importBytes(
   progress('Checking source fingerprint and archive...');
   const sourceExportId = await sha256(bytes);
   const zip = bytes[0] === 0x50 && bytes[1] === 0x4b;
-  const json = zip ? readArchive(bytes) : [new TextDecoder('utf-8', { fatal: true }).decode(bytes)];
+  const json = zip
+    ? readArchive(bytes)
+    : [decodeUtf8(new TextDecoder('utf-8', { fatal: true }), bytes, 'The JSON file')];
   progress(`Normalizing ${json.length} conversation segment(s)...`);
   const segments: unknown[] = json.map((value, i) => {
     try {

@@ -1,3 +1,15 @@
+import type { Dataset } from '../shared/model';
+
+export const demoFileName = 'synthetic-demo-conversations.json';
+
+export function isDemoDataset(dataset: Dataset): boolean {
+  return (
+    dataset.sourceName === demoFileName &&
+    dataset.conversations.length > 0 &&
+    dataset.conversations.every((chat) => chat.id.startsWith('synthetic-demo-'))
+  );
+}
+
 export function demoExport(): string {
   const examples = [
     {

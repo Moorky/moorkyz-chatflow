@@ -2,6 +2,7 @@
   "name": "moorkyz-chatflow",
   "version": "1.0.0",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
   "engines": {
     "node": ">=22.18.0"
@@ -25,6 +26,7 @@
     "fflate": "0.8.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.1",
     "@types/node": "26.6.6",
