@@ -3,6 +3,8 @@ dist/
 artifacts/
 public/icons/
 public/THIRD_PARTY_NOTICES.txt
+public/LICENSE
+public/NOTICE
 playwright-report/
 test-results/
 coverage/

@@ -1,9 +1,17 @@
 # Changelog
 
-All notable changes to MOORKYZ ChatFlow are recorded here. No version has been
-tagged or published as a GitHub release yet; publication is an owner decision.
+All notable changes to MOORKYZ ChatFlow are recorded here.
 
-## Unreleased (1.0.0 candidate)
+## 1.0.0 — 2026-11-08
+
+First public MVP release: a local-first Chromium MV3 extension for exploring
+official ChatGPT exports. Not a Chrome Web Store release.
+
+### License
+
+- Licensed under Apache-2.0 (`LICENSE`, `NOTICE`, `package.json`). Every packaged
+  extension contains `LICENSE`, `NOTICE` and the bundled fflate MIT notice;
+  packaging fails if they are missing or differ from the repository copies.
 
 ### Fixed
 
@@ -29,9 +37,9 @@ tagged or published as a GitHub release yet; publication is an owner decision.
 - The privacy dialog and sidebar state that the local snapshot is unencrypted.
 - Automated axe-core accessibility scan (development dependency only) and a
   390 px viewport check in the browser suite.
-- `CONTRIBUTING.md`, `SECURITY.md` and this changelog.
+- `CONTRIBUTING.md`, `SECURITY.md`, issue/PR templates and this changelog.
 
-## 1.0.0 offline foundation (untagged)
+### Included from the offline foundation
 
 - Local import of official ChatGPT export ZIP/JSON, normalization, Boolean
   search with branch policies, selection, statistics, TXT/JSON/CSV/HTML exports

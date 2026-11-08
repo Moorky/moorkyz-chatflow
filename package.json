@@ -2,6 +2,7 @@
   "name": "moorkyz-chatflow",
   "version": "1.0.0",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
   "engines": {
     "node": ">=22.18.0"

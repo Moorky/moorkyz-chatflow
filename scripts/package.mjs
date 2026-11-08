@@ -10,10 +10,17 @@ if (manifest.manifest_version !== 3 || manifest.permissions || manifest.host_per
 for (const entry of [
   'index.html',
   'THIRD_PARTY_NOTICES.txt',
+  'LICENSE',
+  'NOTICE',
   manifest.background.service_worker,
   ...Object.values(manifest.icons),
 ]) {
   await readFile(join('dist', entry));
+}
+for (const file of ['LICENSE', 'NOTICE']) {
+  if (!(await readFile(join('dist', file))).equals(await readFile(file))) {
+    throw new Error(`The packaged ${file} must match the repository ${file}.`);
+  }
 }
 const license = await readFile(join('node_modules', 'fflate', 'LICENSE'), 'utf8');
 const notices = await readFile(join('dist', 'THIRD_PARTY_NOTICES.txt'), 'utf8');

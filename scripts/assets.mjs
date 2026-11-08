@@ -29,6 +29,9 @@ await writeFile(
   join('public', 'THIRD_PARTY_NOTICES.txt'),
   `MOORKYZ ChatFlow - bundled third-party software\n\nfflate ${dependency.version}\n\n${license}`,
 );
+for (const file of ['LICENSE', 'NOTICE']) {
+  await writeFile(join('public', file), await readFile(file));
+}
 for (const size of [16, 32, 48, 128]) {
   const rows = Buffer.alloc((size * 4 + 1) * size);
   for (let y = 0; y < size; y++) {

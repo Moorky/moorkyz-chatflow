@@ -11,8 +11,9 @@ the [testing guide](docs/TESTING.md), [AGENTS.md](AGENTS.md) and the
 - Use only synthetic data in tests, issues, screenshots and pull requests. Never
   share real exports, conversation text, credentials or device paths.
 - Work on scoped requests only. The V5 backlog in the README is informational.
-- No product license has been chosen yet. Until the owner selects one, do not
-  assume that a contribution grant or reuse permission exists.
+- ChatFlow is licensed under the [Apache License 2.0](LICENSE). Unless you state
+  otherwise, contributions you submit are licensed under the same terms
+  (Apache-2.0, section 5).
 
 ## Development
 

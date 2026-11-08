@@ -29,4 +29,11 @@ test('release ZIP matches its checksum, manifest version, assets, CSP and comple
   }
   const license = await readFile(resolve('node_modules', 'fflate', 'LICENSE'), 'utf8');
   expect(strFromU8(files['THIRD_PARTY_NOTICES.txt']!)).toContain(license.trim());
+  const projectLicense = await readFile(resolve('LICENSE'), 'utf8');
+  expect(projectLicense).toContain('Apache License');
+  expect(projectLicense).toContain('Version 2.0, January 2004');
+  expect(strFromU8(files['LICENSE']!)).toBe(projectLicense);
+  expect(strFromU8(files['NOTICE']!)).toBe(await readFile(resolve('NOTICE'), 'utf8'));
+  expect(strFromU8(files['NOTICE']!)).toContain('Copyright 2026 Moorkyz');
+  expect(pkg.license).toBe('Apache-2.0');
 });

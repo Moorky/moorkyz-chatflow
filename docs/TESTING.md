@@ -33,7 +33,7 @@ temporary extension profiles. They do not connect to a real ChatGPT account.
 | Browser            | Installed MV3 extension and production web UI; exact message navigation/context, branch switching, filters, preview privacy, keyboard/Escape, five viewport widths, theme contrast, multitab clearing, downloads and restoration         |
 | First run          | Export-acquisition guidance and limits, synthetic-demo banner (not shown for a user file reusing the demo filename), honest import-failure wording with and without a saved library, collapsed search help and no-results option summary |
 | Accessibility      | axe-core WCAG 2.1 A/AA scan with zero serious/critical violations on first-run, results, viewer and export-review screens in light and dark mode; dialog Escape and focus return                                                         |
-| Distribution       | ZIP checksum, package/manifest version agreement, local asset presence, PNG icon signatures, offline CSP/no host permissions and bundled license notice                                                                                  |
+| Distribution       | ZIP checksum, package/manifest version agreement, local asset presence, PNG icon signatures, offline CSP/no host permissions, bundled dependency notice, and Apache-2.0 `LICENSE`/`NOTICE` identical to the repository copies            |
 | Scale              | Synthetic 1/100/3,000/10,000/25,000 messages and 1,000 selected sources, without silent truncation                                                                                                                                       |
 
 `npm run test:coverage` measures the non-UI TypeScript modules under `src`.

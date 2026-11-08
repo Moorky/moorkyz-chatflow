@@ -14,8 +14,10 @@ Before changing this repository, read [README.md](README.md),
   credentials, or conversation data. Keep the real-export test separate; use it
   only with an owner-supplied file and explicit task scope, and keep its output
   private.
-- The product license has not been selected. Do not add a product license grant
-  or treat a dependency notice as one without the owner's decision.
+- The product is licensed under Apache-2.0 (`LICENSE`, `NOTICE`; copyright
+  2026 Moorkyz), chosen by the owner on 2026-11-08. Keep `package.json`, the
+  packaged `LICENSE`/`NOTICE`, and third-party notices consistent; do not
+  relicense without the owner's decision.
 
 ## Work and evidence
 

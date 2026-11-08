@@ -54,3 +54,17 @@ one.
   final independent GO/NO-GO decision (CF-44).
 - **Acceptance:** clean `npm ci` with a fresh cache, green `npm run test:all`,
   and an audit under `.audits/` recording commands, results and open gates.
+
+### CHATFLOW-REL-01 — License and v1.0.0 publication
+
+- **State:** IN_PROGRESS
+- **Owner/session:** @Moorky, 2026-11-08: "Do all that for me, license should be
+  apache 2.0" (covers the owner-gated items of CHATFLOW-MVP-01).
+- **Scope:** Apache-2.0 `LICENSE`/`NOTICE` (copyright 2026 Moorkyz) in the repo
+  and package; history review; push `dev`, PR into the default `master`, green
+  Windows/Ubuntu CI on the final SHA; independent audit per the owner's release
+  assessment template; `v1.0.0` tag and GitHub release with ZIP + SHA-256;
+  repository metadata and public visibility.
+- **Out of scope:** LinkedIn post and Chrome Web Store submission.
+- **Acceptance:** green CI on the released SHA, release asset checksum verified
+  after download, audit recorded under `.audits/`.

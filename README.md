@@ -115,7 +115,8 @@ npm run test:e2e
 4. Import your own official export; do not commit real conversations to this repository.
 
 The build produces `artifacts/moorkyz-chatflow-1.0.0.zip` and a companion SHA-256
-file. This is a local unsigned package, **not** a published or signed release.
+file. Tagged GitHub releases attach this ZIP and its `.sha256` file. The package is
+unsigned and is **not** published in the Chrome Web Store; load it unpacked.
 Package entry ordering and timestamps are fixed for reproducible packaging.
 The distribution includes `THIRD_PARTY_NOTICES.txt`, generated from the installed
 bundled dependency's version and license; packaging fails if its license is absent.
@@ -245,10 +246,13 @@ strict TypeScript, four-stage work/verification, ignored runtime output, explici
 permission boundaries, and evidence instead of release claims. The upstream
 template itself was not modified or wholesale copied.
 
-No license grant has been selected for this new repository. The specification
-recommends Apache-2.0 subject to owner approval; no unapproved license is assumed.
-The bundled fflate dependency's MIT license and attribution are retained in both
-the installed package and the generated extension distribution.
+## License
+
+MOORKYZ ChatFlow is licensed under the [Apache License 2.0](LICENSE).
+Copyright 2026 Moorkyz; see [NOTICE](NOTICE). The bundled fflate dependency's MIT
+license and attribution are retained in both the installed package and the
+generated extension distribution (`THIRD_PARTY_NOTICES.txt`). Every packaged
+extension also contains `LICENSE` and `NOTICE`.
 
 Tracked self-audit and verification evidence:
 [offline foundation cleanup audit](.audits/2026-10-29-offline-foundation.md),
