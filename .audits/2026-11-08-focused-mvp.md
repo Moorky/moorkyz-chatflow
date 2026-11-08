@@ -110,9 +110,12 @@ that for me, license should be apache 2.0"):
   and installed the release ZIP in a clean offline Chromium profile. It found no
   Critical/High defects; see
   [the independent assessment](2026-11-08-independent-release-assessment.md).
-  Its Medium/Low findings were resolved afterwards (F-01 re-verification on the
-  final SHA, F-02 synthetic-only disclosure, F-04 `master` fast-forward, F-05
-  release ZIP built from a clean clone, F-06 release wording, F-07 this addendum,
-  F-08 CSV column, F-09 UTF-8 message, F-11 packager checks).
+  Its Medium/Low findings F-01, F-02, F-06, F-07, F-08, F-09 and F-11 were
+  resolved in `6289197`, which the auditor re-verified with a GO verdict
+  (package SHA-256 `90c45bef…cf27`). F-04 (`master` fast-forward) and F-05
+  (upload of a clean-clone ZIP) are part of the pending publication step below.
 - Still open: real-export smoke test (CF-33, NOT RUN) and a manual screen-reader
   check (F-03). Both are disclosed as limitations.
+- **Publication pending:** the GitHub credential expired before the `master`
+  fast-forward, `v1.0.0` tag, release upload and visibility change. These steps
+  are scripted against the verified SHA and run once the owner logs in again.

@@ -57,7 +57,12 @@ one.
 
 ### CHATFLOW-REL-01 — License and v1.0.0 publication
 
-- **State:** IN_PROGRESS
+- **State:** BLOCKED — the GitHub credential returned HTTP 401 after `6289197`
+  was pushed. Restart condition: owner completes `gh auth login`, then runs the
+  prepared publish step (fast-forward `master` to `6289197`, tag `v1.0.0`,
+  upload the clean-clone ZIP with SHA-256 `90c45bef…cf27`, make the repo public).
+- **Done so far:** Apache-2.0 license; review and audit fixes; green CI on
+  Ubuntu/Windows; independent re-verification GO at `6289197`; PR #2 open.
 - **Owner/session:** @Moorky, 2026-11-08: "Do all that for me, license should be
   apache 2.0" (covers the owner-gated items of CHATFLOW-MVP-01).
 - **Scope:** Apache-2.0 `LICENSE`/`NOTICE` (copyright 2026 Moorkyz) in the repo
