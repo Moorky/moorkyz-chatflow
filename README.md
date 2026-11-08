@@ -4,6 +4,43 @@
 for exploring official ChatGPT exports. Independent of OpenAI; not developed,
 supported, or certified by OpenAI.
 
+> Explore and export your ChatGPT conversation history locally, without uploading
+> your archive to another service.
+
+This works on official export files you import yourself. It is not a live account
+sync, not a guaranteed full backup, and it does not preserve images, files, or audio.
+
+## Quickstart (about 3 minutes)
+
+1. Build and load the extension (Node.js 24 LTS recommended, 22.18+ supported):
+
+   ```powershell
+   npm ci
+   npm run build
+   ```
+
+   Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**,
+   and select the generated `dist` folder. Click the ChatFlow toolbar action.
+
+2. Click **Explore with synthetic demo data** to try every feature with four
+   fictional conversations. A banner marks them as demo data.
+3. Search for `migration`, open the hit, select the chat, then use **Statistics**
+   or **Export selection** to download a ZIP with a SHA-256 manifest.
+4. For your own history: in ChatGPT open **Settings → Data controls → Export data**,
+   download the ZIP from the email link, and choose **+ Import ChatGPT export**.
+   The same steps are shown in the app under **How to get your export**.
+5. **Clear local data** removes the saved snapshot from this browser profile.
+
+### Troubleshooting
+
+| Symptom                                     | What to do                                                                                                                                                      |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Import rejected                             | Read the error text. Unsupported schemas, ZIP64/encrypted ZIPs, and files over the input budgets are refused. Your previously imported library stays unchanged. |
+| A conversation you expect is not found      | Try **Anywhere in chat**, **All branches**, or fewer filters. The no-results panel lists what was searched. A snapshot only contains what the export contained. |
+| A stored library cannot be read             | Use **Clear local data**, then import the export again. The original export file is never modified.                                                             |
+| `npm ci` fails with `EINTEGRITY`            | Use the committed `package-lock.json` unchanged and a clean npm cache. Do not bypass integrity checks.                                                          |
+| Browser tests report that port 4173 is busy | Set `CHATFLOW_TEST_PORT` to a free port; tests never take over an existing server.                                                                              |
+
 ## What exists today
 
 Version **1.0.0 is an offline foundation**, built from the supplied V5 specification
@@ -29,7 +66,12 @@ and search-gap catalog. It is not the full V5 product or a store-ready release.
   JSON/CSV/HTML (TXT contains a JSON-formatted statistics report). Each download is
   a ZIP with a SHA-256 manifest, source/query fingerprints, counts, and warnings.
 - Hide preview text, use keyboard-accessible controls, and browse light/dark,
-  reduced-motion, and responsive layouts. Try the explicitly synthetic demo.
+  reduced-motion, and responsive layouts. Try the explicitly synthetic demo; a
+  banner labels it as fictional data until your own export replaces it.
+- First-run guidance explains how to obtain an official export and the input
+  limits. Search help, scope/branch explanations, and advanced filters are
+  collapsed by default. No-results panels list the query, scope, branch policy,
+  and filters that were applied.
 
 **Not implemented:** PDF, advanced export splits, first/last N _message_ export,
 saved sets/searches, full timezone selection, fuzzy/semantic/field syntax,
@@ -188,8 +230,9 @@ Public tests use only synthetic data: 1/100/3,000/10,000/25,000 messages, 1,000 
 sources, branches, missing metadata, malformed ZIP/JSON, Unicode, Boolean
 scope differences, HTML/CSV injection counterexamples, manifest hashes, storage
 restoration/recovery, failed-import atomicity, multi-tab clearing, navigation,
-downloads, four viewport widths (320/768/1024/1440), keyboard paths, and primary
-button contrast in both themes.
+downloads, five viewport widths (320/390/768/1024/1440), keyboard paths, primary
+button contrast in both themes, and an automated axe-core WCAG 2.1 A/AA scan of the
+first-run, results, viewer, and export-review screens in light and dark mode.
 The browser suite uses the production web build and also loads the real unpacked
 MV3 extension to exercise its worker, storage, and CSP. Packaging is checked
 separately. CI runs on Windows/Linux with Node 24, pinned actions, and a read-only
@@ -209,7 +252,11 @@ the installed package and the generated extension distribution.
 
 Tracked self-audit and verification evidence:
 [offline foundation cleanup audit](.audits/2026-10-29-offline-foundation.md),
-[publication audit](.audits/2026-11-03-publication-audit.md), and
-[main-branch history integration audit](.audits/2026-11-03-main-branch-integration.md).
+[publication audit](.audits/2026-11-03-publication-audit.md),
+[main-branch history integration audit](.audits/2026-11-03-main-branch-integration.md), and
+[focused MVP audit](.audits/2026-11-08-focused-mvp.md).
 An audit records actual results and outstanding release gates; passing tests
 does not imply independent review or publication approval.
+
+See also [CHANGELOG.md](CHANGELOG.md), [CONTRIBUTING.md](CONTRIBUTING.md), and
+[SECURITY.md](SECURITY.md).
