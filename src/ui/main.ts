@@ -248,13 +248,14 @@ function warningCount(current: Dataset): number {
   return current.conversations.reduce((sum, chat) => sum + chat.warnings.length, 0);
 }
 // Dataset-derived counts must refresh even when the follow-up search fails.
-function renderInventory() {
+function renderInventory(indexedMessages?: number) {
   if (!dataset) return;
   element('welcome').hidden = true;
   element('chat-count').textContent = dataset.conversations.length.toLocaleString();
-  element('message-count').textContent = dataset.conversations
-    .reduce((sum, chat) => sum + branchMessages(chat, branching()).length, 0)
-    .toLocaleString();
+  element('message-count').textContent = (
+    indexedMessages ??
+    dataset.conversations.reduce((sum, chat) => sum + branchMessages(chat, branching()).length, 0)
+  ).toLocaleString();
   element('coverage').textContent =
     `Local snapshot: ${dataset.sourceName} | Imported ${formatTime(dataset.importedAt)} | ${warningCount(dataset)} integrity warnings | Live-account coverage unknown`;
   updateControls();
@@ -262,8 +263,7 @@ function renderInventory() {
 function renderResults() {
   updateControls();
   if (!dataset || !result) return;
-  renderInventory();
-  element('message-count').textContent = result.indexedMessages.toLocaleString();
+  renderInventory(result.indexedMessages);
   element('hit-count').textContent =
     `${result.groups.length.toLocaleString()} / ${result.messageCount.toLocaleString()}`;
   element('occurrence-count').textContent =
