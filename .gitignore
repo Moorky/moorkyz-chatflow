@@ -1,0 +1,14 @@
+node_modules/
+dist/
+artifacts/
+public/icons/
+public/THIRD_PARTY_NOTICES.txt
+playwright-report/
+test-results/
+coverage/
+.logs/
+.archive/
+.moorkyz/
+*.local
+.env*
+!.env.example

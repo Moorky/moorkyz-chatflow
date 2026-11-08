@@ -1,0 +1,137 @@
+[
+  {
+    "id": "example-migration",
+    "title": "MOORKYZ migration checklist",
+    "project_name": "MOORKYZ",
+    "create_time": 1793232000,
+    "update_time": 1793232300,
+    "current_node": "final",
+    "mapping": {
+      "root": { "id": "root", "parent": null, "children": ["prompt"], "message": null },
+      "prompt": {
+        "id": "prompt",
+        "parent": "root",
+        "children": ["discarded", "answer"],
+        "message": {
+          "id": "example-prompt",
+          "author": { "role": "user", "name": null, "metadata": {} },
+          "create_time": 1793232000,
+          "content": { "content_type": "text", "parts": ["How can we migrate safely?"] },
+          "status": "finished_successfully",
+          "end_turn": null,
+          "metadata": {}
+        }
+      },
+      "discarded": {
+        "id": "discarded",
+        "parent": "prompt",
+        "children": [],
+        "message": {
+          "id": "example-alternate",
+          "author": { "role": "assistant", "name": null, "metadata": {} },
+          "create_time": 1793232060,
+          "content": { "content_type": "text", "parts": ["Move everything immediately."] },
+          "status": "finished_successfully",
+          "end_turn": true,
+          "metadata": { "model_slug": "example-model" }
+        }
+      },
+      "answer": {
+        "id": "answer",
+        "parent": "prompt",
+        "children": ["follow-up"],
+        "message": {
+          "id": "example-answer",
+          "author": { "role": "assistant", "name": null, "metadata": {} },
+          "create_time": 1793232120,
+          "content": {
+            "content_type": "text",
+            "parts": ["Back up the data and test a rollback plan."]
+          },
+          "status": "finished_successfully",
+          "end_turn": true,
+          "metadata": { "model_slug": "example-model" }
+        }
+      },
+      "follow-up": {
+        "id": "follow-up",
+        "parent": "answer",
+        "children": ["final"],
+        "message": {
+          "id": "example-follow-up",
+          "author": { "role": "user", "name": null, "metadata": {} },
+          "create_time": 1793232180,
+          "content": {
+            "content_type": "text",
+            "parts": ["Can the rollback plan stay local?"]
+          },
+          "status": "finished_successfully",
+          "end_turn": null,
+          "metadata": {}
+        }
+      },
+      "final": {
+        "id": "final",
+        "parent": "follow-up",
+        "children": [],
+        "message": {
+          "id": "example-final",
+          "author": { "role": "assistant", "name": null, "metadata": {} },
+          "create_time": 1793232240,
+          "content": {
+            "content_type": "text",
+            "parts": ["Yes. Validate the local backup before migration."]
+          },
+          "status": "finished_successfully",
+          "end_turn": true,
+          "metadata": { "model_slug": "example-model" }
+        }
+      }
+    }
+  },
+  {
+    "id": "example-dinner",
+    "title": "Weeknight dinner",
+    "create_time": 1793318400,
+    "update_time": 1793318460,
+    "current_node": "dinner-answer",
+    "mapping": {
+      "dinner-root": {
+        "id": "dinner-root",
+        "parent": null,
+        "children": ["dinner-prompt"],
+        "message": null
+      },
+      "dinner-prompt": {
+        "id": "dinner-prompt",
+        "parent": "dinner-root",
+        "children": ["dinner-answer"],
+        "message": {
+          "id": "example-dinner-prompt",
+          "author": { "role": "user", "name": null, "metadata": {} },
+          "create_time": 1793318400,
+          "content": { "content_type": "text", "parts": ["Suggest a vegetarian dinner."] },
+          "status": "finished_successfully",
+          "metadata": {}
+        }
+      },
+      "dinner-answer": {
+        "id": "dinner-answer",
+        "parent": "dinner-prompt",
+        "children": [],
+        "message": {
+          "id": "example-dinner-answer",
+          "author": { "role": "assistant", "name": null, "metadata": {} },
+          "create_time": 1793318460,
+          "content": {
+            "content_type": "text",
+            "parts": ["Try a chickpea and spinach curry."]
+          },
+          "status": "finished_successfully",
+          "end_turn": true,
+          "metadata": {}
+        }
+      }
+    }
+  }
+]

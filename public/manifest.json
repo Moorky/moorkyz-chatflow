@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "MOORKYZ ChatFlow",
+  "version": "1.0.0",
+  "description": "Free, local-first search and analysis of your official ChatGPT exports. Independent of OpenAI.",
+  "action": { "default_title": "Open MOORKYZ ChatFlow" },
+  "background": { "service_worker": "background.js" },
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self'"
+  }
+}
