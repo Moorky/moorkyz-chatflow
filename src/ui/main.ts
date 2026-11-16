@@ -15,6 +15,10 @@ import type {
 } from '../shared/model';
 import { selectIds } from '../selection/selection';
 import { demoExport, demoFileName, isDemoDataset } from './demo';
+import { mountExpressionToolbar } from './expression-toolbar';
+import { reconstructMessages } from '../exports/reconstruction';
+import type { MessageReference } from '../exports/reconstruction';
+import { downloadBytes } from './download';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
@@ -29,7 +33,9 @@ app.innerHTML = `
     <header class="topbar"><span class="breadcrumb">Workspace <span>/</span> Conversation library</span><span class="badge"><span class="status-dot"></span> LOCAL ONLY</span></header>
     <div class="content">
       <section class="page-heading"><div><p class="eyebrow">A LITTLE ORDER. A LOT OF POSSIBILITY.</p><h1>Your conversations,<br><span>rediscovered.</span></h1><p class="subtitle">Find the thought. Follow the context. Keep the whole story.</p></div><div class="import-action"><button id="import-button" class="button primary" aria-describedby="import-hint">+ Import ChatGPT export</button><p id="import-hint" class="import-hint">ZIP or JSON &middot; processed on this device</p></div><input id="import-file" type="file" accept=".json,.zip,application/json,application/zip" hidden></section>
-      <section id="welcome" class="welcome"><div class="welcome-icon" aria-hidden="true">&#8615;</div><div><h2>Start with your official ChatGPT export</h2><p>Import the export ZIP, its <code>conversations.json</code>, or a JSON array of conversations. Everything is processed locally, right here.</p><details class="export-guide"><summary>How to get your export</summary><ol><li>In ChatGPT, open <strong>Settings &rarr; Data controls &rarr; Export data</strong> and confirm (menu names can change).</li><li>Download the ZIP from the link OpenAI sends you by email.</li><li>Choose <strong>Import ChatGPT export</strong> and select that ZIP. Keep the original; ChatFlow never modifies it.</li></ol><p>Limits: 128 MiB per file, 256 MiB of expanded conversation JSON, 10,000 ZIP entries. Only exported text is indexed; images, files and audio are listed as references, not imported.</p></details><button id="demo" class="text-button">Explore with synthetic demo data <span aria-hidden="true">&#8594;</span></button></div><span class="pill">NO ACCOUNT REQUIRED</span></section>
+      <section class="prototype-actions" aria-label="Prototype workflows"><button id="direct-export" class="button">Direct ChatGPT export (experimental)</button><span class="muted">Standalone, owner-run script. This workspace stays offline.</span></section>
+      <section id="welcome" class="welcome">
+<div class="welcome-icon" aria-hidden="true">&#8615;</div><div><h2>Start with your official ChatGPT export</h2><p>Import the export ZIP, its <code>conversations.json</code>, or a JSON array of conversations. Everything is processed locally, right here.</p><details class="export-guide"><summary>How to get your export</summary><ol><li>In ChatGPT, open <strong>Settings &rarr; Data controls &rarr; Export data</strong> and confirm (menu names can change).</li><li>Download the ZIP from the link OpenAI sends you by email.</li><li>Choose <strong>Import ChatGPT export</strong> and select that ZIP. Keep the original; ChatFlow never modifies it.</li></ol><p>Limits: 128 MiB per file, 256 MiB of expanded conversation JSON, 10,000 ZIP entries. Only exported text is indexed; images, files and audio are listed as references, not imported.</p></details><button id="demo" class="text-button">Explore with synthetic demo data <span aria-hidden="true">&#8594;</span></button></div><span class="pill">NO ACCOUNT REQUIRED</span></section>
       <div id="demo-banner" class="demo-banner" role="note" hidden><strong>Synthetic demo data.</strong> These conversations are fictional examples, not your ChatGPT history. Importing your own export replaces them.</div>
       <div id="status" class="notice" role="status" aria-live="polite">Ready for your first import.</div>
       <div id="error" class="error" role="alert" hidden></div>
@@ -40,10 +46,9 @@ app.innerHTML = `
         <div><span>Selected chats</span><strong id="selected-count">0</strong><small>Your selection, your control</small></div>
       </section>
       <section class="search-panel" aria-label="Search conversations">
-        <form id="search-form"><label class="sr-only" for="query">Search query</label><div class="search-line"><span aria-hidden="true" class="search-icon">&#9906;</span><input id="query" type="search" placeholder='Search a thought, a phrase, a possibility...' autocomplete="off" spellcheck="false"><button class="button primary" id="search-button" disabled>Search library</button></div>
+        <form id="search-form"><div id="expression-search"></div>
         <div class="filter-row">
           <label>Match in <select id="scope"><option value="message">Same message</option><option value="conversation">Anywhere in chat</option></select></label>
-          <label>Search <select id="fields"><option value="both">Title + messages</option><option value="text">Messages only</option><option value="title">Titles only</option></select></label>
           <label>Branches <select id="branching"><option value="active-path">Active path</option><option value="all-branches">All branches</option></select></label>
           <details class="advanced"><summary>More filters</summary><div class="advanced-fields">
             <label>Role <select id="role"><option value="all">All roles</option><option value="user">User</option><option value="assistant">Assistant</option><option value="system">System</option><option value="tool">Tool</option><option value="unknown">Unknown</option></select></label>
@@ -51,18 +56,20 @@ app.innerHTML = `
             <label class="check-label"><input id="case-sensitive" type="checkbox"> Case sensitive</label><label class="check-label"><input id="within-selection" type="checkbox"> Search only selected chats</label>
           </div></details>
           <label class="check-label discreet"><input id="discreet" type="checkbox"> Hide previews</label>
+          <button class="button small primary" id="search-button" disabled>Search library</button>
         </div></form>
         <details class="search-help"><summary>How search works</summary><div class="search-help-body">
-          <p><strong>Syntax.</strong> <code>(search OR migration) AND NOT draft</code> &middot; <code>"exact phrase"</code> &middot; adjacent words mean AND &middot; precedence NOT &gt; AND &gt; OR. Literal text matching, not fuzzy or semantic.</p>
+          <p><strong>Syntax.</strong> <code>(search OR migration) AND NOT draft</code> &middot; <code>"exact phrase"</code> &middot; <code>moor*</code> and <code>*evidence*</code> match within words &middot; adjacent words mean AND &middot; precedence NOT &gt; AND &gt; OR. Quote a literal asterisk. Not fuzzy or semantic.</p>
           <p><strong>Same message</strong> requires the whole query to match inside one message (or the title on its own). <strong>Anywhere in chat</strong> lets terms match different messages of one conversation; NOT then excludes the whole chat.</p>
           <p><strong>Active path</strong> searches the answers you kept in each chat. <strong>All branches</strong> also searches edited prompts and regenerated answers you moved away from; shared earlier messages count once.</p>
-          <p><strong>Counts.</strong> Matching chats are conversations the query selects. Matching messages are the message hits listed for those chats: with Same message each one satisfies the whole query; with Anywhere in chat each one contains a searched term (chats included only through NOT are listed by query logic, without message hits). Text occurrences count literal matches of searched (non-NOT) terms inside those hits only, including a title hit when titles are searched.</p>
+          <p><strong>Counts.</strong> Matching chats are conversations the query selects. Matching messages are the message hits listed for those chats: with Same message each one satisfies the whole query; with Anywhere in chat each one contains a searched term (chats included only through NOT are listed by query logic, without message hits). Text occurrences count literal matches or whole words matched by unquoted wildcards for searched (non-NOT) terms inside those hits only, including a title hit when titles are searched.</p>
           <p>Role and date filters (under More filters) narrow candidate messages before matching. Dates are UTC message times, not chat creation dates.</p>
         </div></details>
       </section>
       <section class="library-panel" aria-labelledby="results-heading">
         <div class="results-toolbar"><div><h2 id="results-heading">Conversation library</h2><span id="results-summary">Your next good idea might already be here.</span></div><label>Sort <select id="sort"><option value="source">Source order</option><option value="newest">Newest created</option><option value="oldest">Oldest created</option><option value="title">Title A-Z</option></select></label></div>
         <div class="selection-toolbar"><button id="select-all" class="quiet" disabled>Select all results</button><label class="sr-only" for="select-count">Number of chats</label><input id="select-count" type="number" min="1" step="1" value="10"><button id="select-first" class="quiet" disabled>First N</button><button id="select-last" class="quiet" disabled>Last N</button><button id="clear-selection" class="quiet" disabled>Clear selection</button><span class="toolbar-spacer"></span><button id="stats" class="button small" disabled>Statistics</button><button id="export" class="button small primary" disabled>Export selection</button></div>
+        <div class="reconstruction-toolbar"><button id="reconstruct" class="quiet" disabled>Reconstruct messages (0)</button><span class="muted">Open a chat to choose individual messages from any conversation.</span></div>
         <div id="results" class="results"><div class="empty-state"><span class="empty-mark" aria-hidden="true">&#9638;</span><h3>Room for all your ideas.</h3><p>Import your history to start connecting the dots.</p><p class="muted">Official exports only. No live scraping or account changes.</p></div></div>
         <button id="more-results" class="quiet more" hidden>Show more chats</button>
       </section>
@@ -81,12 +88,30 @@ function element<T extends HTMLElement = HTMLElement>(id: string): T {
 const input = (id: string) => element<HTMLInputElement>(id);
 const select = (id: string) => element<HTMLSelectElement>(id);
 const button = (id: string) => element<HTMLButtonElement>(id);
+const expressionToolbar = mountExpressionToolbar(element('expression-search'), {
+  inputId: 'query',
+  scopeId: 'fields',
+  onClear: () => {
+    void runSearch();
+  },
+  onReset: () => {
+    select('scope').value = 'message';
+    select('branching').value = 'active-path';
+    select('role').value = 'all';
+    input('date-from').value = '';
+    input('date-to').value = '';
+    input('case-sensitive').checked = false;
+    input('within-selection').checked = false;
+    void runSearch();
+  },
+});
 const worker = new Worker(new URL('../background/worker.ts', import.meta.url), { type: 'module' });
 const updates = new BroadcastChannel('moorkyz-chatflow-snapshot');
 updates.addEventListener('message', () => location.reload());
 let dataset: Dataset | null = null;
 let result: SearchResult | null = null;
 let selected = new Set<string>();
+let reconstruction: MessageReference[] = [];
 let nextId = 0;
 let latestSearch = 0;
 let busy = false;
@@ -202,6 +227,7 @@ function updateControls() {
   button('forget').disabled = busy || (!dataset && !storageProblem);
   button('import-button').disabled = busy;
   button('demo').disabled = busy;
+  expressionToolbar.setDisabled(busy);
   for (const control of element('search-form').querySelectorAll<
     HTMLInputElement | HTMLSelectElement
   >('input, select')) {
@@ -214,6 +240,8 @@ function updateControls() {
     button(id).disabled = !ready || !selected.size;
   }
   element('selected-count').textContent = selected.size.toLocaleString();
+  button('reconstruct').disabled = busy || !reconstruction.length;
+  button('reconstruct').textContent = `Reconstruct messages (${reconstruction.length})`;
   element('import-hint').textContent = dataset
     ? 'Replaces this local library only after the new file validates and saves.'
     : 'ZIP or JSON · processed on this device';
@@ -356,6 +384,7 @@ function renderResults() {
 
 async function runSearch() {
   if (!dataset || busy) return;
+  expressionToolbar.validate();
   const generation = ++latestSearch;
   searching = true;
   updateControls();
@@ -404,6 +433,7 @@ async function importFile(file: File) {
     storageProblem = false;
     updates.postMessage('snapshot-changed');
     selected = new Set();
+    reconstruction = [];
     result = null;
     input('within-selection').checked = false;
     busy = false;
@@ -456,6 +486,23 @@ function renderViewer() {
     const hit = hits.find((hit) => hit.messageId === message.id);
     article.innerHTML = `<div class="message-heading"><strong>${escapeHtml(message.role)}</strong><span>${formatTime(message.timestamp)} &middot; #${viewerPage * viewerSize + offset + 1}</span></div><p class="message-id">Message ID: ${escapeHtml(message.id)} / Node: ${escapeHtml(message.nodeId)}</p><pre></pre>`;
     const pre = article.querySelector('pre')!;
+    const choose = document.createElement('label');
+    choose.className = 'check-label';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.setAttribute('aria-label', `Include message ${message.id} in reconstruction`);
+    checkbox.checked = reconstruction.some(
+      (reference) => reference.chatId === chat.id && reference.messageId === message.id,
+    );
+    checkbox.addEventListener('change', () => {
+      reconstruction = reconstruction.filter(
+        (reference) => reference.chatId !== chat.id || reference.messageId !== message.id,
+      );
+      if (checkbox.checked) reconstruction.push({ chatId: chat.id, messageId: message.id });
+      updateControls();
+    });
+    choose.append(checkbox, ' Include in reconstruction');
+    article.append(choose);
     if (!hit?.offsets.length) pre.textContent = message.text || '[Text unavailable in export]';
     else {
       let cursor = 0;
@@ -558,14 +605,7 @@ function wireDownload(kind: 'conversations' | 'statistics') {
           filter: lastOptions,
         });
         if (response.type !== 'download') throw new Error('Export returned no downloadable file.');
-        const url = URL.createObjectURL(
-          new Blob([new Uint8Array(response.bytes).buffer], { type: 'application/zip' }),
-        );
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = response.filename;
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+        downloadBytes(response.bytes, response.filename);
         element<HTMLDialogElement>('action-dialog').close();
         announce(
           `Export ready: ${response.filename}. All ${selected.size} selected chats included.`,
@@ -581,6 +621,89 @@ function wireDownload(kind: 'conversations' | 'statistics') {
 element('search-form').addEventListener('submit', (event) => {
   event.preventDefault();
   void runSearch();
+});
+button('direct-export').addEventListener('click', () => {
+  showAction(
+    'Direct ChatGPT export prototype',
+    `
+    <p>The installed extension remains offline and cannot read your ChatGPT tab. This separate, read-only script must be run by you in your own signed-in <strong>chatgpt.com</strong> tab. It uses experimental internal endpoints, not an official supported API.</p>
+    <ol><li><a class="button" href="./chatflow-extractor.js" download="chatflow-extractor.js">Download standalone extractor</a> and review the script before running it.</li>
+    <li>Open your chosen ChatGPT account/workspace. Open your browser developer console and run the downloaded script there. Respect any browser or platform restrictions; do not disable security controls.</li>
+    <li>Choose Single, Keywords, Project ID or All. Confirm read-only access and click Start. No password, cookie or token needs to be copied or supplied.</li>
+    <li>Pause, resume or cancel in the extractor panel. Download its ZIP, then use Import ChatGPT export here to browse and reconstruct it.</li></ol>
+    <p><strong>Limits:</strong> live-account compatibility has not been verified. Inventory may omit project-only, hidden or inaccessible chats. Project mode requires an exact project ID, not a title guess. Attachment binaries and project files/instructions are not retrieved.</p>
+    <p>Only ChatGPT same-origin requests are made by the standalone script. Credentials stay in memory; conversation checkpoints stay unencrypted in the ChatGPT profile until you use Clear checkpoints. ChatFlow's Clear local data does not clear that separate origin.</p>
+  `,
+  );
+});
+button('reconstruct').addEventListener('click', () => {
+  const render = () => {
+    const title =
+      document.querySelector<HTMLInputElement>('#reconstruction-title')?.value ??
+      'Reconstructed context';
+    element('action-body').innerHTML = `
+      <p>Combine selected messages without changing their source chats. Order below is export order; each segment retains its source fingerprint and message/node IDs.</p>
+      <label>Reconstruction title <input id="reconstruction-title" type="text"></label>
+      <ol class="source-list" id="reconstruction-list"></ol>
+      <label class="check-label"><input id="confirm-reconstruction" type="checkbox"> I reviewed these messages for private content.</label>
+      <button id="download-reconstruction" class="button primary" disabled>Download reconstruction ZIP</button>`;
+    input('reconstruction-title').value = title;
+    for (const [index, reference] of reconstruction.entries()) {
+      const chat = dataset?.conversations.find((chat) => chat.id === reference.chatId);
+      const item = document.createElement('li');
+      const source = document.createElement('span');
+      source.textContent = `${chat?.title ?? reference.chatId} / ${reference.messageId}`;
+      item.append(source);
+      for (const [label, delta] of [
+        ['Move up', -1],
+        ['Move down', 1],
+        ['Remove', 0],
+      ] as const) {
+        const control = document.createElement('button');
+        control.className = 'quiet';
+        control.textContent = `${label} ${index + 1}`;
+        control.disabled =
+          delta !== 0 && (index + delta < 0 || index + delta >= reconstruction.length);
+        control.addEventListener('click', () => {
+          if (!delta) reconstruction.splice(index, 1);
+          else
+            [reconstruction[index], reconstruction[index + delta]] = [
+              reconstruction[index + delta]!,
+              reconstruction[index]!,
+            ];
+          updateControls();
+          render();
+        });
+        item.append(control);
+      }
+      element('reconstruction-list').append(item);
+    }
+    input('confirm-reconstruction').addEventListener('change', () => {
+      button('download-reconstruction').disabled =
+        !input('confirm-reconstruction').checked || !reconstruction.length;
+    });
+    button('download-reconstruction').addEventListener('click', () => {
+      void (async () => {
+        button('download-reconstruction').disabled = true;
+        try {
+          if (!dataset) throw new Error('Import a snapshot before reconstructing messages.');
+          downloadBytes(
+            await reconstructMessages(dataset, reconstruction, input('reconstruction-title').value),
+            `chatflow-reconstruction-${crypto.randomUUID()}.zip`,
+          );
+          element<HTMLDialogElement>('action-dialog').close();
+          announce(
+            `Reconstructed ${reconstruction.length} messages. Source conversations unchanged.`,
+          );
+        } catch (error) {
+          showError(error);
+          button('download-reconstruction').disabled = false;
+        }
+      })();
+    });
+  };
+  showAction('Review message reconstruction', '');
+  render();
 });
 for (const id of [
   'scope',

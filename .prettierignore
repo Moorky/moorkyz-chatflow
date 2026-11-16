@@ -1,7 +1,8 @@
-node_modules
-dist
-artifacts
-playwright-report
-test-results
-package-lock.json
-public/THIRD_PARTY_NOTICES.txt
+src/node_modules
+/Extension
+/Downloads
+.output
+src/package-lock.json
+src/extension/THIRD_PARTY_NOTICES.txt
+src/docs/reference/*.md
+!src/docs/reference/README.md

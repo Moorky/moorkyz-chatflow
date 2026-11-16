@@ -1,7 +1,8 @@
 # Repository instructions
 
 Before changing this repository, read [README.md](README.md),
-[docs/TESTING.md](docs/TESTING.md), and [AGENT_SCHEDULER.md](AGENT_SCHEDULER.md).
+[the development guide](src/docs/Development.md),
+[the testing guide](src/docs/Testing.md), and [the scheduler](src/docs/AgentScheduler.md).
 
 ## Product and data boundaries
 
@@ -15,7 +16,7 @@ Before changing this repository, read [README.md](README.md),
   only with an owner-supplied file and explicit task scope, and keep its output
   private.
 - The product is licensed under Apache-2.0 (`LICENSE`, `NOTICE`; copyright
-  2026 Moorkyz), chosen by the owner on 2026-11-08. Keep `package.json`, the
+  2026 Moorkyz), chosen by the owner on 2026-11-08. Keep `src/package.json`, the
   packaged `LICENSE`/`NOTICE`, and third-party notices consistent; do not
   relicense without the owner's decision.
 
@@ -25,7 +26,12 @@ Before changing this repository, read [README.md](README.md),
   authorization to implement features.
 - Keep one repository task `IN_PROGRESS`; follow recorded ownership and
   handoffs in the scheduler.
-- For code changes, use `npm run test:all` as the complete public gate unless
+- Keep end-user material in `Documentation` or the root; product source, tests,
+  package metadata, dependencies and tooling belong under `src`. User-facing
+  documentation files use PascalCase (initial capital). Preserve GitHub/agent discovery
+  files in their conventional locations.
+- Run npm commands from `src`, or use `npm --prefix src ...` from the root.
+  For code changes, use `npm run test:all` as the complete public gate unless
   the task records a narrower scope and why. Node 24 is preferred; Node 22.18+
   is supported.
 - Record actual validation results and limitations. Commit, push, and deploy

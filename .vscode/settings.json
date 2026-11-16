@@ -1,0 +1,5 @@
+{
+  "eslint.workingDirectories": [{ "directory": "src", "changeProcessCWD": true }],
+  "eslint.options": { "overrideConfigFile": "tooling/eslint.config.js" },
+  "typescript.tsdk": "src/node_modules/typescript/lib"
+}

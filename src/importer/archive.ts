@@ -137,9 +137,10 @@ export function readArchive(bytes: Uint8Array): string[] {
   unzip.register(UnzipInflate);
   // Bounded input chunks allow decompression limits to interrupt highly compressed archives.
   for (let offset = 0; offset < bytes.length; offset += 64 * 1024) {
-    unzip.push(bytes.subarray(offset, offset + 64 * 1024), offset + 64 * 1024 >= bytes.length);
+    unzip.push(bytes.subarray(offset, offset + 64 * 1024), false);
   }
   if (pending.size) throw new Error('Incomplete ZIP conversation data.');
+  unzip.push(new Uint8Array(), true);
   if (seen.size !== expected.size)
     throw new Error('ZIP directory and extracted entries do not match.');
   if (!segments.size)

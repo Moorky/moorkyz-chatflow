@@ -79,7 +79,6 @@ function normalizeChat(value: unknown, position: number): Conversation {
   const stack = [...(children.get(null) ?? [])].reverse();
   while (stack.length) {
     const nodeId = stack.pop()!;
-    if (visited.has(nodeId)) throw new Error(`Cycle in conversation ${id}.`);
     visited.add(nodeId);
     const node = nodes.get(nodeId)!;
     const nested = children.get(nodeId) ?? [];

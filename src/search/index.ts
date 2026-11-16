@@ -1,6 +1,6 @@
 import { branchMessages } from '../shared/model';
 import type { Dataset, Hit, Message, SearchOptions, SearchResult } from '../shared/model';
-import { contains, evaluate, occurrences, parseQuery, positiveTerms } from './query';
+import { contains, evaluate, occurrences, parseQuery, positivePatterns } from './query';
 
 function inRange(message: Message, options: SearchOptions): boolean {
   if (options.role !== 'all' && message.role !== options.role) return false;
@@ -44,7 +44,7 @@ export class SearchIndex {
       throw new Error('The end date must be after the start date.');
     }
     const query = parseQuery(options.query);
-    const terms = positiveTerms(query);
+    const terms = positivePatterns(query);
     const selected = options.selectedIds === null ? null : new Set(options.selectedIds);
     const result: SearchResult = {
       groups: [],
@@ -72,10 +72,13 @@ export class SearchIndex {
       ) {
         continue;
       }
-      const match = (text: string, term: string) => contains(text, term, options.caseSensitive);
+      const match = (text: string, term: string, wildcard?: boolean) =>
+        contains(text, term, options.caseSensitive, wildcard);
       if (
         options.scope === 'conversation' &&
-        !evaluate(query, (term) => candidates.some((candidate) => match(candidate.text, term)))
+        !evaluate(query, (term, wildcard) =>
+          candidates.some((candidate) => match(candidate.text, term, wildcard)),
+        )
       ) {
         continue;
       }
@@ -83,10 +86,10 @@ export class SearchIndex {
       for (const candidate of candidates) {
         const qualifies =
           options.scope === 'conversation' ||
-          evaluate(query, (term) => match(candidate.text, term));
+          evaluate(query, (term, wildcard) => match(candidate.text, term, wildcard));
         if (!qualifies) continue;
         const ranges = terms.flatMap((term) =>
-          occurrences(candidate.text, term, options.caseSensitive),
+          occurrences(candidate.text, term.value, options.caseSensitive, term.wildcard),
         );
         const offsets = [
           ...new Map(ranges.map((range) => [`${range.start}:${range.end}`, range])).values(),
@@ -107,7 +110,9 @@ export class SearchIndex {
       const qualifiesWithoutEvidence =
         options.scope === 'conversation' ||
         !query ||
-        candidates.some((candidate) => evaluate(query, (term) => match(candidate.text, term)));
+        candidates.some((candidate) =>
+          evaluate(query, (term, wildcard) => match(candidate.text, term, wildcard)),
+        );
       if (!hits.length && qualifiesWithoutEvidence && (query || metadataOnly || !messages.length)) {
         hits.push({
           sourceExportId: this.dataset.sourceExportId,

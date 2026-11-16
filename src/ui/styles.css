@@ -352,21 +352,139 @@ h1 span {
   padding: 18px 20px 10px;
   margin-bottom: 24px;
 }
-.search-line {
+.prototype-actions,
+.reconstruction-toolbar {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
   align-items: center;
+  margin-bottom: 16px;
+  font-size: 11px;
 }
-.search-icon {
-  font-size: 24px;
-  color: var(--muted);
+.reconstruction-toolbar {
+  padding: 8px 16px;
+  margin-bottom: 0;
+  border-bottom: 1px solid var(--line);
 }
-.search-line input {
+.expression-field {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--canvas);
+}
+.expression-field:focus-within {
+  border-color: var(--accent);
+}
+.expression-field input {
   flex: 1;
   border: none;
   background: transparent;
-  padding: 10px 0;
+  padding: 12px;
   width: 100%;
+}
+.expression-field input:focus-visible {
+  outline-offset: -3px;
+}
+.expression-field input::-webkit-search-cancel-button {
+  display: none;
+}
+.expression-toggle {
+  display: grid;
+  place-items: center;
+  min-width: 42px;
+  min-height: 42px;
+  padding: 10px;
+  margin-right: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.expression-search[data-invalid='true'] .expression-field {
+  border-color: var(--danger);
+  box-shadow: inset 0 0 0 1px var(--danger);
+}
+.expression-search[data-expanded='true'] .expression-chevron {
+  transform: rotate(90deg);
+}
+.expression-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+}
+.expression-panel-body {
+  min-height: 0;
+  overflow: hidden;
+  transform: translateY(-4px);
+}
+.expression-search[data-expanded='true'] .expression-panel {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+}
+.expression-search[data-expanded='true'] .expression-panel-body {
+  transform: translateY(0);
+}
+.expression-tools,
+.expression-options,
+.expression-suggestions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.expression-tools {
+  margin-top: 12px;
+}
+.expression-tool {
+  border: 1px solid var(--line);
+  background: var(--canvas);
+  padding: 5px 10px;
+  min-height: 32px;
+  font-size: 11px;
+  font-weight: 650;
+}
+.expression-tool:hover,
+.expression-tool:focus-visible {
+  background: var(--tint);
+  color: var(--accent);
+}
+.expression-options {
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+.expression-options label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.expression-options select {
+  font-size: 11px;
+  padding: 5px 8px;
+}
+.expression-hint,
+.expression-keyboard,
+.expression-feedback {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.expression-hint {
+  min-height: 3.2em;
+  margin: 10px 0 4px;
+  color: var(--muted);
+}
+.expression-keyboard {
+  color: var(--muted);
+  margin-bottom: 0;
+}
+.expression-feedback {
+  color: var(--danger);
+  margin-bottom: 0;
 }
 .filter-row {
   display: flex;
@@ -871,15 +989,6 @@ dialog::backdrop {
   .search-panel {
     padding: 12px;
   }
-  .search-line {
-    flex-wrap: wrap;
-  }
-  .search-line input {
-    flex-basis: calc(100% - 40px);
-  }
-  .search-line .button {
-    width: 100%;
-  }
   .filter-row {
     gap: 8px;
     position: relative;
@@ -928,6 +1037,18 @@ dialog::backdrop {
   }
 }
 @media (prefers-reduced-motion: no-preference) {
+  .expression-chevron {
+    transition: transform 180ms ease;
+  }
+  .expression-panel {
+    transition:
+      grid-template-rows 180ms ease,
+      opacity 180ms ease,
+      visibility 180ms;
+  }
+  .expression-panel-body {
+    transition: transform 180ms ease;
+  }
   .button,
   .quiet {
     transition:

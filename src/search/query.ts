@@ -1,9 +1,10 @@
 export type Query =
-  | { type: 'term'; value: string }
+  | { type: 'term'; value: string; wildcard?: true }
   | { type: 'not'; child: Query }
   | { type: 'and' | 'or'; left: Query; right: Query };
 
-type Token = { type: 'term'; value: string } | { type: 'and' | 'or' | 'not' | '(' | ')' };
+type Token =
+  { type: 'term'; value: string; wildcard?: true } | { type: 'and' | 'or' | 'not' | '(' | ')' };
 
 function tokenize(source: string): Token[] {
   const tokens: Token[] = [];
@@ -46,7 +47,7 @@ function tokenize(source: string): Token[] {
       tokens.push(
         value === 'AND' || value === 'OR' || value === 'NOT'
           ? { type: value.toLowerCase() as 'and' | 'or' | 'not' }
-          : { type: 'term', value },
+          : { type: 'term', value, ...(value.includes('*') ? { wildcard: true as const } : {}) },
       );
     }
     if (tokens.length > 256) throw new Error('Query exceeds the 256-token safety budget.');
@@ -96,11 +97,14 @@ export function parseQuery(source: string): Query | null {
   return result;
 }
 
-export function evaluate(query: Query | null, matches: (term: string) => boolean): boolean {
+export function evaluate(
+  query: Query | null,
+  matches: (term: string, wildcard?: boolean) => boolean,
+): boolean {
   if (!query) return true;
   switch (query.type) {
     case 'term':
-      return matches(query.value);
+      return matches(query.value, query.wildcard);
     case 'not':
       return !evaluate(query.child, matches);
     case 'and':
@@ -110,13 +114,25 @@ export function evaluate(query: Query | null, matches: (term: string) => boolean
   }
 }
 
-export function positiveTerms(query: Query | null, negated = false): string[] {
+export function positivePatterns(
+  query: Query | null,
+  negated = false,
+): { value: string; wildcard?: true }[] {
   if (!query) return [];
-  if (query.type === 'term') return negated ? [] : [query.value];
-  if (query.type === 'not') return positiveTerms(query.child, !negated);
+  if (query.type === 'term')
+    return negated ? [] : [{ value: query.value, ...(query.wildcard ? { wildcard: true } : {}) }];
+  if (query.type === 'not') return positivePatterns(query.child, !negated);
   return [
-    ...new Set([...positiveTerms(query.left, negated), ...positiveTerms(query.right, negated)]),
+    ...new Map(
+      [...positivePatterns(query.left, negated), ...positivePatterns(query.right, negated)].map(
+        (pattern) => [`${Boolean(pattern.wildcard)}:${pattern.value}`, pattern],
+      ),
+    ).values(),
   ];
+}
+
+export function positiveTerms(query: Query | null, negated = false): string[] {
+  return [...new Set(positivePatterns(query, negated).map((pattern) => pattern.value))];
 }
 
 function literalPattern(term: string, caseSensitive: boolean, global: boolean): RegExp {
@@ -124,13 +140,41 @@ function literalPattern(term: string, caseSensitive: boolean, global: boolean): 
   return new RegExp(pattern, `${global ? 'g' : ''}${caseSensitive ? 'u' : 'iu'}`);
 }
 
-export function occurrences(text: string, term: string, caseSensitive: boolean) {
+function* wildcardOccurrences(text: string, term: string, caseSensitive: boolean) {
+  const parts = term.split('*').filter(Boolean);
+  const patterns = parts.map((part, index) => {
+    const literal = literalPattern(part, caseSensitive, false);
+    return new RegExp(
+      `${index === 0 && !term.startsWith('*') ? '^' : ''}${literal.source}${index === parts.length - 1 && !term.endsWith('*') ? '$' : ''}`,
+      literal.flags,
+    );
+  });
+  for (const word of text.matchAll(/\S+/gu)) {
+    let cursor = 0;
+    const matches = patterns.every((pattern) => {
+      const match = pattern.exec(word[0].slice(cursor));
+      if (!match) return false;
+      cursor += match.index + match[0].length;
+      return true;
+    });
+    if (matches) yield { start: word.index, end: word.index + word[0].length };
+  }
+}
+
+export function occurrences(text: string, term: string, caseSensitive: boolean, wildcard = false) {
+  if (wildcard) return [...wildcardOccurrences(text, term, caseSensitive)];
   return [...text.matchAll(literalPattern(term, caseSensitive, true))].map((match) => ({
     start: match.index,
     end: match.index + match[0].length,
   }));
 }
 
-export function contains(text: string, term: string, caseSensitive: boolean): boolean {
+export function contains(
+  text: string,
+  term: string,
+  caseSensitive: boolean,
+  wildcard = false,
+): boolean {
+  if (wildcard) return !wildcardOccurrences(text, term, caseSensitive).next().done;
   return literalPattern(term, caseSensitive, false).test(text);
 }
