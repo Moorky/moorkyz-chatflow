@@ -181,3 +181,32 @@ one.
 - **Limits retained:** no real-export/live-account check or independent release
   sign-off. Instrumented UI coverage is not claimed. Existing development-only
   npm audit findings were not hidden or fixed with forced upgrades.
+
+### CHATFLOW-REFS-01 — Original documents and supplied offline extractor
+
+- **State:** DONE (reference import and local verification).
+- **Owner/session:** @Moorky, 2026-11-17; same Copilot session.
+- **Scope:** compare the two supplied original Markdown documents with the saved
+  pasted versions; restore original formatting without duplicate documents.
+  Preserve the new two-file Python archive as an unintegrated developer
+  reference under `src/tooling/reference/LocalArchiveExtractor`.
+- **Boundaries:** do not execute the supplied Python/launcher, install Python
+  dependencies, modify Downloads originals, replace the tested TypeScript
+  product, or imply this offline archive reader performs live extraction.
+- **Acceptance:** byte-for-byte copies, unchanged normalized document content,
+  accurate provenance/limitations, valid links, formatting and review.
+  Reference-only scope: no executable product/configuration changes, so no
+  repeat of runtime/browser tests is needed; their previous results are not a
+  validation claim for the supplied helper. Commit/push follows owner workflow.
+- **Evidence:** both original documents and both extracted source files match
+  their supplied bytes exactly; document wording/content matches the earlier
+  copies after normalizing Markdown tables, links and code-fence labels.
+  Active links and filename case checked. `npm --prefix src run format:check`,
+  staged diff checks and credential-pattern inspection passed. Git attributes
+  allow valid two-space Markdown hard breaks only in supplied references.
+  No runtime, build or test configuration changed; the Python/launcher were not
+  executed or presented as validated product functionality.
+- **Provenance:** owner archive SHA-256
+  `ae1f1a3d0a29ebe0aadcbf23d02cbcfbd869bac6fd3b905580b0351e39050f95`;
+  per-file hashes and source-inspection limitations are recorded with the
+  helper. Downloads originals were not changed or removed.
