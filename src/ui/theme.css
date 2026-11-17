@@ -13,6 +13,13 @@
   --green: #2a805f;
   --danger: #b32e45;
   --focus: #8475e3;
+  --guide-info: #3257a6;
+  --guide-info-bg: #eef3ff;
+  --guide-success: #246848;
+  --guide-success-bg: #edf8f1;
+  --guide-warning: #82520d;
+  --guide-warning-bg: #fff6e3;
+  --guide-error-bg: #fff0f2;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -30,5 +37,12 @@
     --green: #6eca9c;
     --danger: #ff91a2;
     --focus: #b5a9ff;
+    --guide-info: #b0c9ff;
+    --guide-info-bg: #202c43;
+    --guide-success: #98dfb7;
+    --guide-success-bg: #1c3229;
+    --guide-warning: #f2ca7d;
+    --guide-warning-bg: #382e1a;
+    --guide-error-bg: #3b242d;
   }
 }

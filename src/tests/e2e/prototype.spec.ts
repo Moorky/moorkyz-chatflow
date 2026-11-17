@@ -46,6 +46,53 @@ async function syntheticChatGPT(page: Page) {
   return calls;
 }
 
+test('extractor guide follows settings, explicit consent, completion and the import handoff', async ({
+  page,
+}) => {
+  const calls = await syntheticChatGPT(page);
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('https://chatgpt.com/backend-api/conversation/first', async (route) => {
+    await gate;
+    await route.fulfill({ json: conversation('first', ['alpha', 'beta'], 'Moorkyz prototype') });
+  });
+  const guide = page.locator('#extractor-guide');
+  await expect(guide).toContainText('Choose what you want to extract');
+  await guide.getByRole('button', { name: 'Complete the export settings' }).click();
+  await expect(page.getByLabel('Conversation URL / project ID')).toBeFocused();
+  await page.getByLabel('Conversation URL / project ID').fill('first');
+  await expect(guide).toContainText('Confirm access before connecting');
+  await guide.getByRole('button', { name: 'Review the access confirmation' }).click();
+  await expect(page.locator('#consent')).not.toBeChecked();
+  expect(calls).toEqual(['/']);
+  await page.getByLabel(/I authorize read-only/).check();
+  await expect(guide).toContainText('Ready when you are');
+  expect(calls).toEqual(['/']);
+  await guide.getByRole('button', { name: 'Begin the configured export' }).click();
+  try {
+    await expect(guide).toHaveAttribute('data-tone', 'busy');
+    await expect(guide).toContainText('Extracting conversations');
+    await expect(page.locator('#pause')).toBeEnabled();
+  } finally {
+    release();
+  }
+  await expect(guide).toContainText('Your available conversations are ready');
+  await expect(guide).toContainText('completeness is still unverified');
+  const pending = page.waitForEvent('download');
+  await guide.getByRole('button', { name: 'Save the available results' }).click();
+  await pending;
+  await expect(guide).toContainText('Next: import the ZIP into ChatFlow');
+  await expect(guide).toContainText('Check your browser');
+  await expect(guide.locator('[aria-current="step"]')).toHaveAttribute(
+    'aria-label',
+    'Save & import: current',
+  );
+  await page.getByRole('combobox', { name: 'Export mode', exact: true }).selectOption('keywords');
+  await expect(guide).toContainText('Define the search condition');
+});
+
 test('standalone prototype exports, restores checkpoints and hands off a ZIP to the offline app', async ({
   page,
 }) => {
@@ -175,6 +222,8 @@ test('standalone prototype surfaces expired sessions and pauses on rate limits',
   await page.getByRole('button', { name: 'Start new export', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('paused');
   await expect(page.getByRole('alert')).toContainText('rate limit');
+  await expect(page.locator('#extractor-guide')).toHaveAttribute('data-tone', 'warning');
+  await expect(page.locator('#extractor-guide')).toContainText('No automatic retry is running');
   await expect(page.getByRole('button', { name: 'Resume / update checkpoint' })).toBeEnabled();
 });
 
@@ -191,6 +240,10 @@ test('standalone controls remain readable, responsive and accessible in both the
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
   }
   await page.setViewportSize({ width: 390, height: 900 });
+  const steps = page.locator('#extractor-guide .workflow-guide-steps');
+  await steps.focus();
+  await expect(steps).toBeFocused();
+  await steps.press('ArrowRight');
   for (const colorScheme of ['light', 'dark'] as const) {
     await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
     const report = await new AxeBuilder({ page })

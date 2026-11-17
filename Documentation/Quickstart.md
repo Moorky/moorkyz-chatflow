@@ -19,6 +19,19 @@ npm --prefix src run build
 
 ## Try it in three minutes
 
+The **Your next step** guide stays visible as you work. Its numbered steps,
+checkmarks and text labels explain what is done and what to do next:
+
+- Blue: current action or work in progress.
+- Green: a selection/result is ready, or download preparation finished.
+- Amber: review a condition, adjust a search or recover a paused operation.
+- Red: correct an error before continuing.
+
+Guide buttons take you to the relevant control. They never accept privacy
+consent for you. The guide also appears inside the viewer and review dialogs.
+On small screens, the step list scrolls horizontally; keyboard users can focus
+it and use the arrow keys. Reduced-motion preferences are respected.
+
 1. Click the extension action and choose **Explore with synthetic demo data**.
 2. Search `migration`. Expand the chevron to try expressions, quotes and groups.
 3. Open a chat, navigate exact hits, select chats and open **Statistics**.

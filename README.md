@@ -23,6 +23,8 @@ you do not need Node to use an already-built extension.
 ## What works
 
 - ZIP/JSON import, branch-aware browsing and IndexedDB persistence.
+- A live, color-coded guide with next actions throughout import, search,
+  selection, review and download, including the standalone extractor.
 - Boolean/phrase/wildcard search, title/message scope, role/date filters and
   an accessible expression toolbar.
 - Deterministic chat selection, statistics and JSON/TXT/CSV/HTML export ZIPs

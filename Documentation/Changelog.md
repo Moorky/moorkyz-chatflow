@@ -4,6 +4,10 @@ All notable changes to MOORKYZ ChatFlow are recorded here.
 
 ## Unreleased prototype
 
+- Live in-window guides for the library, viewer/review dialogs and standalone
+  extractor. Numbered steps, checkmarks, accessible color-coded states and
+  next-action controls follow real progress, errors and recovery without
+  bypassing consent or claiming a download was saved.
 - Collapsible expression toolbar with cursor-aware insertion, paired selection
   wrapping, wildcard matching, scope selection and inline syntax assistance.
 - Opt-in standalone, read-only ChatGPT extraction prototype: single, keywords,

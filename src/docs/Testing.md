@@ -161,6 +161,16 @@ These are deterministic prototype tests, **not evidence of current live ChatGPT
 compatibility or exhaustive account coverage**. See
 [prototype limitations and owner validation](../../Documentation/Prototype.md).
 
+## Live workflow guide
+
+`tests/e2e/guided-workflow.spec.ts` verifies the live library/dialog guide from
+demo/import through query validation, selection, privacy confirmation and ZIP
+preparation, including empty collections/titles and sticky responsive layouts.
+The standalone prototype tests verify settings, explicit consent, extraction,
+recovery warnings and import-handoff instructions. Existing axe scans include
+the guides in both themes; the horizontal step list remains keyboard-focusable.
+Guidance never triggers account access or accepts consent merely on opening.
+
 ## Expression toolbar
 
 `src/tests/unit/expression.test.ts` checks caret insertion, whitespace, paired

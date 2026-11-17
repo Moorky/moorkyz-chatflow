@@ -10,6 +10,8 @@ import { openExtractionStore } from '../extraction/store';
 import { errorMessage } from '../shared/model';
 import { mountExpressionToolbar } from './expression-toolbar';
 import { downloadBytes } from './download';
+import { mountWorkflowGuide } from './workflow-guide';
+import type { GuideContent } from './workflow-guide';
 import styles from './styles.css?inline';
 
 export async function mountExtractor(parent: HTMLElement, fetcher: typeof fetch = fetch) {
@@ -37,6 +39,7 @@ export async function mountExtractor(parent: HTMLElement, fetcher: typeof fetch 
   view.setAttribute('aria-label', 'ChatFlow direct extraction prototype');
   view.innerHTML = `
     <div class="dialog-heading"><h1>ChatFlow direct export <small>prototype</small></h1><button type="button" class="button" id="close">Close</button></div>
+    <div id="extractor-guide"></div>
     <p>Read-only, experimental ChatGPT adapter. Only run this on your own account. Internal endpoints may change. No account-wide completeness is claimed.</p>
     <p>Conversation data and recovery checkpoints stay <strong>unencrypted in this ChatGPT browser profile</strong> until cleared. No attachment binaries, project instructions or files are downloaded. Keep your official backup.</p>
     <form class="extractor-form">
@@ -65,15 +68,27 @@ export async function mountExtractor(parent: HTMLElement, fetcher: typeof fetch 
     input('target').value = location.href;
   const progress = element<HTMLParagraphElement>('progress');
   const failure = element<HTMLParagraphElement>('failure');
+  const guide = mountWorkflowGuide(element('extractor-guide'), [
+    'Choose scope',
+    'Confirm',
+    'Extract',
+    'Save & import',
+  ]);
+  let guideError: string | null = null;
+  let loading = true;
+  let activity: 'idle' | 'connecting' | 'working' = 'idle';
+  let downloadPrepared = false;
   const showError = (error: unknown) => {
-    failure.textContent = errorMessage(error);
+    guideError = errorMessage(error);
+    failure.textContent = guideError;
     failure.hidden = false;
+    updateGuide();
   };
   const toolbar = mountExpressionToolbar(element('expression'), {
     inputId: 'extract-query',
     scopeId: 'extract-fields',
-    onClear: () => {},
-    onReset: () => {},
+    onClear: () => settingsChanged(),
+    onReset: () => settingsChanged(),
   });
   let state: ExtractionState | null = null;
   let active: AbortController | null = null;
@@ -92,6 +107,177 @@ export async function mountExtractor(parent: HTMLElement, fetcher: typeof fetch 
     ))
       control.disabled = running;
     toolbar.setDisabled(running);
+    updateGuide();
+  }
+  function focus(id: string) {
+    const target = element<HTMLElement>(id);
+    const details = target.closest('details');
+    if (details) details.open = true;
+    target.scrollIntoView({ block: 'center' });
+    target.focus({ preventScroll: true });
+  }
+  function settingsChanged() {
+    guideError = null;
+    failure.hidden = true;
+    downloadPrepared = false;
+    updateGuide();
+  }
+  function updateGuide() {
+    const exported = Object.values(state?.entries ?? {}).filter(
+      (entry) => entry.status === 'exported',
+    ).length;
+    const resume = {
+      label: 'Go to saved-operation controls',
+      run: () => focus(input('consent').checked ? 'resume' : 'consent'),
+    };
+    const download = { label: 'Save the available results', run: () => button('download').click() };
+    let content: GuideContent;
+    const options = readOptions();
+    const editing =
+      state &&
+      (options.mode !== state.options.mode ||
+        options.target !== state.options.target ||
+        options.query !== state.options.query ||
+        options.fields !== state.options.fields ||
+        options.workspaceId !== state.options.workspaceId ||
+        options.concurrency !== state.options.concurrency ||
+        options.includeArchived !== state.options.includeArchived);
+    if (loading || downloading || activity === 'connecting' || active) {
+      content = {
+        step: loading ? 0 : downloading ? 3 : 2,
+        tone: 'busy',
+        title: loading
+          ? 'Opening local recovery checkpoints'
+          : downloading
+            ? 'Preparing the available ZIP'
+            : activity === 'connecting'
+              ? 'Checking your selected session'
+              : state?.status === 'discovering'
+                ? 'Discovering accessible conversations'
+                : 'Extracting conversations',
+        message: loading
+          ? 'No account request is made just by opening this panel.'
+          : downloading
+            ? 'Wait for ZIP preparation. Your saved checkpoints stay available if this fails.'
+            : 'Wait for the current stage, or use Pause/Cancel below. Saved results stay in this browser profile; completeness remains unverified.',
+        action: active
+          ? { label: 'Pause this operation', run: () => button('pause').click() }
+          : undefined,
+      };
+    } else if (guideError) {
+      content = {
+        step: state?.status === 'paused' ? 2 : 0,
+        tone: state?.status === 'paused' ? 'warning' : 'error',
+        title: 'Follow the recovery instruction before continuing',
+        message: `${guideError} No automatic retry is running. ${exported ? 'You can still save the available results.' : 'Review your settings or access confirmation below.'}`,
+        action: !storage
+          ? { label: 'Close and check browser storage', run: () => button('close').click() }
+          : state?.status === 'paused'
+            ? resume
+            : {
+                label: 'Review the settings',
+                run: () => focus(!input('consent').checked ? 'consent' : 'mode'),
+              },
+        secondary: exported ? download : undefined,
+      };
+    } else if (downloadPrepared) {
+      content = {
+        step: 3,
+        tone: 'success',
+        title: 'Next: import the ZIP into ChatFlow',
+        message:
+          'Check your browser’s downloads for the prepared ZIP. Return to the ChatFlow window, choose Import ChatGPT export, then select that ZIP. Clearing checkpoints is optional and does not delete downloads.',
+      };
+    } else if (state && !editing) {
+      if (state.status === 'completed' || state.status === 'completed-with-errors') {
+        content = {
+          step: 3,
+          tone: state.status === 'completed-with-errors' || !exported ? 'warning' : 'success',
+          title: exported
+            ? 'Your available conversations are ready'
+            : 'No conversations are available to save',
+          message: exported
+            ? `${exported} conversation(s) saved locally. Download the ZIP, then import it into ChatFlow. Review Results and warnings; account-wide completeness is still unverified.`
+            : 'Review Results and warnings and the selected scope. You may need a different query, conversation ID, project ID or workspace.',
+          action: exported ? download : { label: 'Review export scope', run: () => focus('mode') },
+          secondary: exported ? resume : undefined,
+        };
+      } else {
+        content = {
+          step: 2,
+          tone: 'warning',
+          title:
+            state.status === 'cancelled'
+              ? 'Cancelled; saved results were kept'
+              : state.status === 'paused'
+                ? 'Paused; your checkpoint is ready'
+                : 'An interrupted operation can be recovered',
+          message:
+            'Confirm access again if needed, then choose Resume / update checkpoint to continue the saved operation. It uses its saved settings. No account request happens automatically.',
+          action: resume,
+          secondary: exported ? download : undefined,
+        };
+      }
+    } else {
+      let issue: string | null = null;
+      try {
+        validateExtractionOptions(options);
+      } catch (error) {
+        issue = errorMessage(error);
+      }
+      if (issue) {
+        const instruction =
+          !options.target && options.mode === 'single'
+            ? 'Paste a ChatGPT conversation URL or ID. Opening this panel on a conversation fills in its URL for you.'
+            : !options.target && options.mode === 'project'
+              ? 'Paste the exact project ID. This prototype does not resolve projects by name.'
+              : !options.query.trim() && options.mode === 'keywords'
+                ? 'Enter a keyword or Boolean expression. Open the chevron to choose title-only or title-and-message search.'
+                : `${issue} Review the setting below before starting.`;
+        content = {
+          step: 0,
+          title:
+            field.value === 'keywords'
+              ? 'Define the search condition'
+              : field.value === 'project'
+                ? 'Choose the exact project ID'
+                : 'Choose what you want to extract',
+          message: instruction,
+          action: {
+            label: 'Complete the export settings',
+            run: () =>
+              focus(
+                !Number.isInteger(options.concurrency) ||
+                  options.concurrency < 1 ||
+                  options.concurrency > 4
+                  ? 'concurrency'
+                  : field.value === 'keywords'
+                    ? 'extract-query'
+                    : field.value === 'all'
+                      ? 'workspace'
+                      : 'target',
+              ),
+          },
+        };
+      } else if (!input('consent').checked) {
+        content = {
+          step: 1,
+          title: 'Confirm access before connecting',
+          message:
+            'Review the selected scope and workspace. Read the local-storage notice, then check the read-only access confirmation below. Do not copy passwords, cookies or tokens.',
+          action: { label: 'Review the access confirmation', run: () => focus('consent') },
+        };
+      } else {
+        content = {
+          step: 2,
+          title: editing ? 'Ready to start with your new settings' : 'Ready when you are',
+          message:
+            'Choose Start new export below. This is the first step that connects to your selected ChatGPT session. A new export asks before replacing an older checkpoint.',
+          action: { label: 'Begin the configured export', run: () => button('start').click() },
+        };
+      }
+    }
+    guide.update(content);
   }
   function render(current: ExtractionState) {
     const entries = Object.values(current.entries);
@@ -124,6 +310,7 @@ export async function mountExtractor(parent: HTMLElement, fetcher: typeof fetch 
       note.textContent = `${details.length - 50} further warnings/errors are recorded in the downloaded manifest.`;
       outcomes.append(note);
     }
+    updateGuide();
   }
   const readOptions = (): ExtractionOptions => ({
     mode:
@@ -157,6 +344,7 @@ export async function mountExtractor(parent: HTMLElement, fetcher: typeof fetch 
     syncMode();
   }
   field.addEventListener('change', syncMode);
+  for (const event of ['input', 'change']) view.addEventListener(event, settingsChanged);
   // The extraction engine supports title/both only; retain the shared toolbar without a misleading scope.
   element<HTMLSelectElement>('extract-fields').querySelector('option[value="text"]')!.remove();
   syncMode();
@@ -180,11 +368,14 @@ export async function mountExtractor(parent: HTMLElement, fetcher: typeof fetch 
   async function start(resume: boolean) {
     if (active || !storage) return;
     failure.hidden = true;
+    guideError = null;
+    downloadPrepared = false;
     if (!input('consent').checked) {
       showError('Confirm read-only account access and checkpoint storage first.');
       return;
     }
     active = new AbortController();
+    activity = 'connecting';
     controls();
     try {
       const options = resume && state ? state.options : readOptions();
@@ -204,11 +395,13 @@ export async function mountExtractor(parent: HTMLElement, fetcher: typeof fetch 
         state = newExtraction(options, adapter.accountKey);
       }
       if (!state) throw new Error('No checkpoint is available.');
+      activity = 'working';
       await runExtraction(state, adapter, storage.store, active.signal, render);
     } catch (error) {
       showError(error);
     } finally {
       active = null;
+      activity = 'idle';
       controls();
     }
   }
@@ -227,11 +420,13 @@ export async function mountExtractor(parent: HTMLElement, fetcher: typeof fetch 
       downloading = true;
       controls();
       failure.hidden = true;
+      guideError = null;
       try {
         downloadBytes(
           await extractionBundle(state, storage.store),
           `chatflow-direct-${state.id}.zip`,
         );
+        downloadPrepared = true;
       } catch (error) {
         showError(error);
       } finally {
@@ -252,6 +447,8 @@ export async function mountExtractor(parent: HTMLElement, fetcher: typeof fetch 
       try {
         await storage.clear();
         state = null;
+        guideError = null;
+        downloadPrepared = false;
         progress.textContent = 'Checkpoints cleared. Downloads were not deleted.';
         failure.hidden = true;
       } catch (error) {
@@ -265,6 +462,7 @@ export async function mountExtractor(parent: HTMLElement, fetcher: typeof fetch 
     storage?.close();
     host.remove();
   });
+  controls();
   try {
     storage = await openExtractionStore();
     state = await storage.load();
@@ -274,6 +472,8 @@ export async function mountExtractor(parent: HTMLElement, fetcher: typeof fetch 
     }
   } catch (error) {
     showError(error);
+  } finally {
+    loading = false;
   }
   controls();
   return host;

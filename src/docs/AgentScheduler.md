@@ -210,3 +210,38 @@ one.
   `ae1f1a3d0a29ebe0aadcbf23d02cbcfbd869bac6fd3b905580b0351e39050f95`;
   per-file hashes and source-inspection limitations are recorded with the
   helper. Downloads originals were not changed or removed.
+
+### CHATFLOW-GUIDE-01 — Live in-window workflow guidance
+
+- **State:** DONE (local implementation and verification).
+- **Owner/session:** @Moorky, 2026-11-17; same Copilot session.
+- **Scope:** persistent, accessible step-by-step guidance in the library,
+  review dialogs and standalone extractor; actual-state next actions,
+  purposeful color coding, light/dark/mobile and reduced-motion support.
+- **Boundaries:** no new permissions, account access, dependencies or changes
+  to the reference-only Python helper. Guidance must not infer that a download
+  was saved, claim verified extraction completeness or bypass privacy consent.
+- **Acceptance:** focused browser assertions for guide transitions, errors,
+  selection/consent/download and extraction recovery; automated accessibility
+  and visual checks; complete public gate with unchanged 100% core coverage;
+  audit and commit/push according to the owner's workflow.
+- **Evidence, Windows / Node 22.18.0:** `npm --prefix src run test:all`
+  passed: 370 unit/integration tests and 40 browser/distribution tests; all four
+  core coverage metrics remain 100%, with no new exclusions. Typecheck, lint,
+  formatting, production packaging and installed-MV3 workflows passed.
+- **Browser/UX checks:** live settings/consent/extraction/ZIP handoff, controlled
+  in-flight progress, query/count errors and recovery, message-title validation,
+  empty collections, keyboard-scrollable steps, sticky mobile layout, both
+  themes and reduced motion. Existing axe scans include the new guides with
+  zero serious/critical findings. Reviewed generated light/dark screenshots.
+  An additional final-build Chromium smoke at 1024x768 verified guided
+  demo/search/viewer/selection/consent with no page errors.
+- **Audit:** shared UI guide uses text content, not source HTML; no new
+  dependencies, permissions, remote requests or persistence. It never accepts
+  consent, connects automatically or checks off an unobserved saved download.
+  Selection errors now clear when a corrected count is successfully applied.
+- **Package:** ZIP SHA-256
+  `da72550732ceb9c735a31c4c181ea217a524e3868bff82a928cb3ebbc5350d1f`.
+  The remote commit and CI result are verified/reported after publication.
+- **Limits retained:** synthetic provider responses only; live ChatGPT
+  compatibility and actual filesystem download completion remain unverified.

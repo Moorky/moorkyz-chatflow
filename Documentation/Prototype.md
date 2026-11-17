@@ -32,6 +32,10 @@ separate self-contained `chatflow-extractor.js` from the local package.
    and platform permit it. Do not disable browser security controls or circumvent
    access restrictions. Do not send anyone your password, cookies or token.
 3. The script opens a control panel. Merely opening it makes no account request.
+   The live guide explains the current step, points to settings/consent controls
+   and updates during extraction, pause/recovery and ZIP preparation. After
+   preparation it tells you to check browser downloads and import the ZIP into
+   ChatFlow; it does not claim the browser actually saved a file.
 4. Choose a mode and confirm read-only extraction and local checkpoint storage:
    - **Single chat:** conversation URL or ID; the current chat URL is filled in
      automatically when the script is opened on a conversation page.

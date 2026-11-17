@@ -1,4 +1,5 @@
 @import url('./theme.css');
+@import url('./workflow-guide.css');
 
 * {
   box-sizing: border-box;

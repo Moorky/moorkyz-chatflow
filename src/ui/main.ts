@@ -19,6 +19,8 @@ import { mountExpressionToolbar } from './expression-toolbar';
 import { reconstructMessages } from '../exports/reconstruction';
 import type { MessageReference } from '../exports/reconstruction';
 import { downloadBytes } from './download';
+import { mountWorkflowGuide } from './workflow-guide';
+import type { GuideContent } from './workflow-guide';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
@@ -33,6 +35,7 @@ app.innerHTML = `
     <header class="topbar"><span class="breadcrumb">Workspace <span>/</span> Conversation library</span><span class="badge"><span class="status-dot"></span> LOCAL ONLY</span></header>
     <div class="content">
       <section class="page-heading"><div><p class="eyebrow">A LITTLE ORDER. A LOT OF POSSIBILITY.</p><h1>Your conversations,<br><span>rediscovered.</span></h1><p class="subtitle">Find the thought. Follow the context. Keep the whole story.</p></div><div class="import-action"><button id="import-button" class="button primary" aria-describedby="import-hint">+ Import ChatGPT export</button><p id="import-hint" class="import-hint">ZIP or JSON &middot; processed on this device</p></div><input id="import-file" type="file" accept=".json,.zip,application/json,application/zip" hidden></section>
+      <div id="library-guide"></div>
       <section class="prototype-actions" aria-label="Prototype workflows"><button id="direct-export" class="button">Direct ChatGPT export (experimental)</button><span class="muted">Standalone, owner-run script. This workspace stays offline.</span></section>
       <section id="welcome" class="welcome">
 <div class="welcome-icon" aria-hidden="true">&#8615;</div><div><h2>Start with your official ChatGPT export</h2><p>Import the export ZIP, its <code>conversations.json</code>, or a JSON array of conversations. Everything is processed locally, right here.</p><details class="export-guide"><summary>How to get your export</summary><ol><li>In ChatGPT, open <strong>Settings &rarr; Data controls &rarr; Export data</strong> and confirm (menu names can change).</li><li>Download the ZIP from the link OpenAI sends you by email.</li><li>Choose <strong>Import ChatGPT export</strong> and select that ZIP. Keep the original; ChatFlow never modifies it.</li></ol><p>Limits: 128 MiB per file, 256 MiB of expanded conversation JSON, 10,000 ZIP entries. Only exported text is indexed; images, files and audio are listed as references, not imported.</p></details><button id="demo" class="text-button">Explore with synthetic demo data <span aria-hidden="true">&#8594;</span></button></div><span class="pill">NO ACCOUNT REQUIRED</span></section>
@@ -88,6 +91,16 @@ function element<T extends HTMLElement = HTMLElement>(id: string): T {
 const input = (id: string) => element<HTMLInputElement>(id);
 const select = (id: string) => element<HTMLSelectElement>(id);
 const button = (id: string) => element<HTMLButtonElement>(id);
+const workflowSteps = ['Add data', 'Find chats', 'Choose content', 'Save a copy'];
+const libraryGuide = mountWorkflowGuide(element('library-guide'), workflowSteps);
+function dialogGuide(id: string) {
+  const root = document.createElement('div');
+  root.id = `${id}-guide`;
+  element(id).querySelector('.dialog-heading')!.after(root);
+  return mountWorkflowGuide(root, workflowSteps);
+}
+const viewerGuide = dialogGuide('viewer');
+const actionGuide = dialogGuide('action-dialog');
 const expressionToolbar = mountExpressionToolbar(element('expression-search'), {
   inputId: 'query',
   scopeId: 'fields',
@@ -119,6 +132,13 @@ let searching = false;
 let storageProblem = false;
 let shownChats = 40;
 let lastOptions: SearchOptions | null = null;
+let guideError: string | null = null;
+let errorContext: 'import' | 'search' | 'selection' | 'other' = 'other';
+let downloadPrepared = false;
+let preparingDownload = false;
+let directScriptPrepared = false;
+type ActionKind = 'info' | 'export' | 'statistics' | 'reconstruction' | 'direct' | 'clear';
+let actionKind: ActionKind = 'info';
 const pending = new Map<
   number,
   { resolve: (value: WorkerResponse) => void; reject: (error: Error) => void }
@@ -126,13 +146,272 @@ const pending = new Map<
 
 function announce(message: string) {
   element('status').textContent = message;
+  updateGuidance();
 }
-function showError(error: unknown) {
-  element('error').textContent = errorMessage(error);
+function showError(error: unknown, context: typeof errorContext = 'other') {
+  guideError = errorMessage(error);
+  errorContext = context;
+  element('error').textContent = guideError;
   element('error').hidden = false;
+  updateGuidance();
 }
 function clearError() {
+  guideError = null;
   element('error').hidden = true;
+  updateGuidance();
+}
+function focusControl(id: string) {
+  element(id).scrollIntoView({ block: 'center' });
+  element(id).focus({ preventScroll: true });
+}
+function updateGuidance() {
+  const find = { label: 'Go to search', run: () => focusControl('query') };
+  let content: GuideContent;
+  if (preparingDownload || busy || searching) {
+    content = {
+      step: preparingDownload ? 3 : dataset ? 1 : 0,
+      tone: 'busy',
+      title: preparingDownload
+        ? 'Preparing your download'
+        : searching
+          ? 'Searching your local library'
+          : 'Working on this device',
+      message: preparingDownload
+        ? 'Please wait while the ZIP and integrity manifest are prepared. Your original conversations stay unchanged.'
+        : (element('status').textContent ?? 'Please wait for the current operation.'),
+    };
+  } else if (guideError) {
+    content = {
+      step: errorContext === 'import' || !dataset ? 0 : errorContext === 'selection' ? 2 : 1,
+      tone: 'error',
+      title: 'Let’s fix the last step',
+      message: `${guideError} ${dataset ? 'Your saved library is still available.' : 'Choose a supported ZIP/JSON or try the synthetic demo.'}`,
+      action:
+        errorContext === 'import' || !dataset
+          ? { label: 'Choose another export', run: () => button('import-button').click() }
+          : errorContext === 'selection'
+            ? { label: 'Correct the chat count', run: () => focusControl('select-count') }
+            : errorContext === 'search'
+              ? {
+                  label: 'Review search and filters',
+                  run: () => {
+                    element('search-form').querySelector<HTMLDetailsElement>('.advanced')!.open =
+                      true;
+                    focusControl('query');
+                  },
+                }
+              : find,
+    };
+  } else if (!dataset) {
+    content = {
+      step: 0,
+      title: 'Start with your conversation archive',
+      message:
+        'Choose your official ChatGPT ZIP or JSON. Need an archive? Open How to get your export below. Just trying things out? The demo uses clearly marked fictional conversations.',
+      action: { label: 'Choose an export file', run: () => button('import-button').click() },
+      secondary: { label: 'Try the guided demo', run: () => button('demo').click() },
+    };
+  } else if (downloadPrepared) {
+    content = {
+      step: 3,
+      tone: 'success',
+      title: 'Your download is prepared',
+      message:
+        'Look in your browser’s downloads for the ZIP. Open it to review the content and manifest before sharing. Your source library was not changed.',
+      action: {
+        label: 'Keep exploring',
+        run: () => {
+          downloadPrepared = false;
+          updateGuidance();
+          focusControl('query');
+        },
+      },
+    };
+  } else if (input('query').getAttribute('aria-invalid') === 'true') {
+    content = {
+      step: 1,
+      tone: 'warning',
+      title: 'Finish your search expression',
+      message:
+        'Follow the correction below the search field, then press Enter. The chevron opens examples and expression controls.',
+      action: find,
+    };
+  } else if (input('query').value !== (lastOptions?.query ?? '')) {
+    content = {
+      step: 1,
+      title: 'Run your new search',
+      message:
+        'Press Enter or choose Search library to apply this expression. The results below still belong to your last completed search.',
+      action: { label: 'Apply this search', run: () => button('search-button').click() },
+    };
+  } else if (selected.size || reconstruction.length) {
+    content = {
+      step: 2,
+      tone: 'success',
+      title: 'Choose how to save your selection',
+      message: `${selected.size} chat(s) and ${reconstruction.length} individual message(s) selected. Review the content and privacy confirmation before downloading.`,
+      action: selected.size
+        ? { label: 'Review selected chats', run: () => button('export').click() }
+        : { label: 'Review message collection', run: () => button('reconstruct').click() },
+      secondary:
+        selected.size && reconstruction.length
+          ? { label: 'Review message collection', run: () => button('reconstruct').click() }
+          : find,
+    };
+  } else if (!dataset.conversations.length || result?.groups.length === 0) {
+    content = {
+      step: 1,
+      tone: 'warning',
+      title: 'No matches in this snapshot',
+      message:
+        'Try fewer terms, another title/message scope or All branches. No matches does not mean a chat is absent from your account.',
+      action: find,
+      secondary: {
+        label: 'Reset query and filters',
+        run: () =>
+          element('expression-search')
+            .querySelector<HTMLButtonElement>('.expression-reset')!
+            .click(),
+      },
+    };
+  } else {
+    content = {
+      step: 1,
+      title: 'Find the conversation you need',
+      message:
+        'Search for a word or phrase, or browse below. Open a chat to read the full context; check a chat’s selection box to keep the whole conversation.',
+      action: find,
+    };
+  }
+  libraryGuide.update(content);
+  if (element<HTMLDialogElement>('viewer').open && viewerChat) {
+    const chat = viewerChat;
+    viewerGuide.update({
+      step: 2,
+      title: 'Review context, then choose what to keep',
+      message: `${reconstruction.length} individual message(s) collected. Use Previous/Next match for hits, or check Include in reconstruction on particular messages. Choose the whole chat below, or close to browse more.`,
+      action: {
+        label: 'Select this chat and return',
+        run: () => {
+          downloadPrepared = false;
+          selected.add(chat.id);
+          renderResults();
+          element<HTMLDialogElement>('viewer').close();
+          focusControl('export');
+        },
+      },
+      secondary: {
+        label: 'Return to the library',
+        run: () => element<HTMLDialogElement>('viewer').close(),
+      },
+    });
+  }
+  if (!element<HTMLDialogElement>('action-dialog').open) return;
+  if (guideError || preparingDownload) {
+    actionGuide.update({
+      ...content,
+      step: 3,
+      action: guideError
+        ? {
+            label: 'Return to the library',
+            run: () => {
+              element<HTMLDialogElement>('action-dialog').close();
+              focusControl('query');
+            },
+          }
+        : undefined,
+      secondary: undefined,
+    });
+    return;
+  }
+  if (actionKind === 'export' || actionKind === 'statistics' || actionKind === 'reconstruction') {
+    const reconstructionMode = actionKind === 'reconstruction';
+    if (reconstructionMode && !reconstruction.length) {
+      actionGuide.update({
+        step: 2,
+        tone: 'warning',
+        title: 'Choose at least one message',
+        message:
+          'The collection is empty. Return to the library, open a chat and check Include in reconstruction on the messages you want to keep.',
+        action: {
+          label: 'Back to message selection',
+          run: () => element<HTMLDialogElement>('action-dialog').close(),
+        },
+      });
+      return;
+    }
+    if (
+      reconstructionMode &&
+      document.querySelector<HTMLInputElement>('#reconstruction-title')?.value.trim() === ''
+    ) {
+      actionGuide.update({
+        step: 3,
+        tone: 'warning',
+        title: 'Name your message collection',
+        message:
+          'Enter a short title below, then review the message order and privacy confirmation.',
+        action: {
+          label: 'Enter a collection title',
+          run: () => focusControl('reconstruction-title'),
+        },
+      });
+      return;
+    }
+    const consent = document.querySelector<HTMLInputElement>(
+      reconstructionMode ? '#confirm-reconstruction' : '#confirm-export',
+    );
+    const ready = Boolean(consent?.checked) && (!reconstructionMode || reconstruction.length > 0);
+    actionGuide.update({
+      step: 3,
+      tone: ready ? 'success' : 'active',
+      title: ready ? 'Ready for your download' : 'Review, then confirm private content',
+      message: reconstructionMode
+        ? 'Name the collection and arrange its messages in the desired order. Check the privacy confirmation, then choose Download reconstruction ZIP.'
+        : `Choose a format and check the privacy confirmation below, then choose Download. Full selected chats under ${branching()} are included, not just matching text.`,
+      action: ready
+        ? {
+            label: 'Go to the download button',
+            run: () => focusControl(reconstructionMode ? 'download-reconstruction' : 'download'),
+          }
+        : undefined,
+    });
+  } else if (actionKind === 'direct') {
+    actionGuide.update({
+      step: 0,
+      title: directScriptPrepared
+        ? 'Check the helper download, then open ChatGPT'
+        : 'Get the separate extraction helper',
+      message: directScriptPrepared
+        ? 'Look in your browser’s downloads, then review and run the script in your signed-in ChatGPT tab only if permitted. Its live guide handles extraction; return here to import its ZIP. This window cannot observe that other tab.'
+        : 'Download and review the standalone helper, then follow the instructions below. The extension stays offline and never connects to your account automatically.',
+      action: directScriptPrepared
+        ? {
+            label: 'Return to the import step',
+            run: () => {
+              element<HTMLDialogElement>('action-dialog').close();
+              focusControl('import-button');
+            },
+          }
+        : {
+            label: 'Get the helper script',
+            run: () =>
+              element('action-body').querySelector<HTMLAnchorElement>('a[download]')!.click(),
+          },
+    });
+  } else {
+    actionGuide.update({
+      step: 0,
+      tone: actionKind === 'clear' ? 'warning' : 'active',
+      title:
+        actionKind === 'clear'
+          ? 'Confirm only if you want to clear this copy'
+          : 'Understand where your data stays',
+      message:
+        actionKind === 'clear'
+          ? 'The confirmation below removes this local library, not ChatGPT chats, original files or downloads. Close this window to keep the library.'
+          : 'Read the privacy and limitation details below. Close this window to continue; no setting or account action happens automatically.',
+    });
+  }
 }
 type RequestPayload = WorkerRequest extends infer R
   ? R extends WorkerRequest
@@ -251,6 +530,7 @@ function updateControls() {
   )) {
     checkbox.disabled = !ready;
   }
+  updateGuidance();
 }
 
 function snippet(text: string, hit: Hit): string {
@@ -384,6 +664,7 @@ function renderResults() {
 
 async function runSearch() {
   if (!dataset || busy) return;
+  downloadPrepared = false;
   expressionToolbar.validate();
   const generation = ++latestSearch;
   searching = true;
@@ -412,13 +693,14 @@ async function runSearch() {
       element('results-summary').textContent = 'Search error; no result set is available.';
       button('more-results').hidden = true;
       updateControls();
-      showError(error);
+      showError(error, 'search');
       announce('Search stopped. Correct the query or filters to continue.');
     }
   }
 }
 
 async function importFile(file: File) {
+  downloadPrepared = false;
   busy = true;
   searching = false;
   latestSearch++;
@@ -443,7 +725,7 @@ async function importFile(file: File) {
       `Imported ${dataset.conversations.length} chats. Original source file unchanged. Snapshot saved on this device.`,
     );
   } catch (error) {
-    showError(error);
+    showError(error, 'import');
     announce(
       dataset
         ? 'Import failed. The previous local library was preserved.'
@@ -533,6 +815,7 @@ function renderViewer() {
   button('next-hit').disabled = !hits.length || viewerHitIndex >= hits.length - 1;
   button('previous-page').disabled = viewerPage === 0;
   button('next-page').disabled = (viewerPage + 1) * viewerSize >= messages.length;
+  updateGuidance();
   container.querySelector('.matched-message')?.scrollIntoView({ block: 'center' });
 }
 function openViewer(chat: Conversation, hit: Hit) {
@@ -565,10 +848,13 @@ function moveHit(delta: number) {
   renderViewer();
 }
 
-function showAction(title: string, body: string) {
+function showAction(title: string, body: string, kind: ActionKind = 'info') {
+  clearError();
+  actionKind = kind;
   element('action-title').textContent = title;
   element('action-body').innerHTML = body;
   element<HTMLDialogElement>('action-dialog').showModal();
+  updateGuidance();
 }
 function selectedChats(): Conversation[] {
   return dataset?.conversations.filter((chat) => selected.has(chat.id)) ?? [];
@@ -588,11 +874,14 @@ function exportControls(kind: 'conversations' | 'statistics') {
 function wireDownload(kind: 'conversations' | 'statistics') {
   input('confirm-export').addEventListener('change', () => {
     button('download').disabled = !input('confirm-export').checked;
+    updateGuidance();
   });
   button('download').addEventListener('click', () => {
     void (async () => {
       try {
         clearError();
+        preparingDownload = true;
+        updateGuidance();
         button('download').disabled = true;
         button('download').textContent = 'Preparing local export...';
         const format = select('export-format').value as ExportFormat;
@@ -606,6 +895,7 @@ function wireDownload(kind: 'conversations' | 'statistics') {
         });
         if (response.type !== 'download') throw new Error('Export returned no downloadable file.');
         downloadBytes(response.bytes, response.filename);
+        downloadPrepared = true;
         element<HTMLDialogElement>('action-dialog').close();
         announce(
           `Export ready: ${response.filename}. All ${selected.size} selected chats included.`,
@@ -613,6 +903,9 @@ function wireDownload(kind: 'conversations' | 'statistics') {
       } catch (error) {
         element<HTMLDialogElement>('action-dialog').close();
         showError(error);
+      } finally {
+        preparingDownload = false;
+        updateGuidance();
       }
     })();
   });
@@ -622,7 +915,21 @@ element('search-form').addEventListener('submit', (event) => {
   event.preventDefault();
   void runSearch();
 });
+input('query').addEventListener('input', () => {
+  downloadPrepared = false;
+  clearError();
+});
+for (const id of ['results', 'viewer-messages']) {
+  element(id).addEventListener('change', () => {
+    downloadPrepared = false;
+    updateGuidance();
+  });
+}
+for (const id of ['viewer', 'action-dialog']) {
+  element(id).addEventListener('close', updateGuidance);
+}
 button('direct-export').addEventListener('click', () => {
+  directScriptPrepared = false;
   showAction(
     'Direct ChatGPT export prototype',
     `
@@ -634,7 +941,14 @@ button('direct-export').addEventListener('click', () => {
     <p><strong>Limits:</strong> live-account compatibility has not been verified. Inventory may omit project-only, hidden or inaccessible chats. Project mode requires an exact project ID, not a title guess. Attachment binaries and project files/instructions are not retrieved.</p>
     <p>Only ChatGPT same-origin requests are made by the standalone script. Credentials stay in memory; conversation checkpoints stay unencrypted in the ChatGPT profile until you use Clear checkpoints. ChatFlow's Clear local data does not clear that separate origin.</p>
   `,
+    'direct',
   );
+  element('action-body')
+    .querySelector('a[download]')!
+    .addEventListener('click', () => {
+      directScriptPrepared = true;
+      updateGuidance();
+    });
 });
 button('reconstruct').addEventListener('click', () => {
   const render = () => {
@@ -678,19 +992,30 @@ button('reconstruct').addEventListener('click', () => {
       }
       element('reconstruction-list').append(item);
     }
-    input('confirm-reconstruction').addEventListener('change', () => {
+    const updateReconstructionReady = () => {
       button('download-reconstruction').disabled =
-        !input('confirm-reconstruction').checked || !reconstruction.length;
+        !input('confirm-reconstruction').checked ||
+        !reconstruction.length ||
+        !input('reconstruction-title').value.trim();
+      updateGuidance();
+    };
+    input('confirm-reconstruction').addEventListener('change', updateReconstructionReady);
+    input('reconstruction-title').addEventListener('input', () => {
+      clearError();
+      updateReconstructionReady();
     });
     button('download-reconstruction').addEventListener('click', () => {
       void (async () => {
         button('download-reconstruction').disabled = true;
+        preparingDownload = true;
+        clearError();
         try {
           if (!dataset) throw new Error('Import a snapshot before reconstructing messages.');
           downloadBytes(
             await reconstructMessages(dataset, reconstruction, input('reconstruction-title').value),
             `chatflow-reconstruction-${crypto.randomUUID()}.zip`,
           );
+          downloadPrepared = true;
           element<HTMLDialogElement>('action-dialog').close();
           announce(
             `Reconstructed ${reconstruction.length} messages. Source conversations unchanged.`,
@@ -698,11 +1023,15 @@ button('reconstruct').addEventListener('click', () => {
         } catch (error) {
           showError(error);
           button('download-reconstruction').disabled = false;
+        } finally {
+          preparingDownload = false;
+          updateGuidance();
         }
       })();
     });
+    updateGuidance();
   };
-  showAction('Review message reconstruction', '');
+  showAction('Review message reconstruction', '', 'reconstruction');
   render();
 });
 for (const id of [
@@ -739,7 +1068,9 @@ for (const [id, mode] of [
   ['select-last', 'last'],
 ] as const) {
   button(id).addEventListener('click', () => {
+    downloadPrepared = false;
     try {
+      clearError();
       selected = selectIds(
         selected,
         orderedGroups().map((group) => group.chatId),
@@ -750,11 +1081,12 @@ for (const [id, mode] of [
       else renderResults();
       announce(`${selected.size} chats selected.`);
     } catch (error) {
-      showError(error);
+      showError(error, 'selection');
     }
   });
 }
 button('clear-selection').addEventListener('click', () => {
+  downloadPrepared = false;
   selected.clear();
   if (input('within-selection').checked) void runSearch();
   else renderResults();
@@ -779,6 +1111,7 @@ button('export').addEventListener('click', () => {
   showAction(
     'Review your conversation export',
     `${sourceList()}${exportControls('conversations')}`,
+    'export',
   );
   wireDownload('conversations');
 });
@@ -799,6 +1132,7 @@ button('stats').addEventListener('click', () => {
       showAction(
         'Your selection, in perspective',
         `<div class="stat-summary"><strong>${report.chats} chats</strong><strong>${report.messages} messages</strong><strong>${report.words} words</strong></div><p>Weighted words/message: ${report.weightedMeanWords?.toFixed(2) ?? 'Unknown'} (${report.messages} messages). Mean of chat means: ${report.meanOfChatMeans?.toFixed(2) ?? 'Unknown'} (${report.sources.filter((s) => s.messages).length} nonempty chats).</p><p class="muted">Words: Intl.Segmenter word-like segments. Characters: Unicode codepoints. Branch policy: ${branching()}. Full chats, not just matches. Export includes per-chat metrics, roles, dates and coverage.</p>${sourceList(report)}${exportControls('statistics')}`,
+        'statistics',
       );
       wireDownload('statistics');
       announce('Statistics ready. Every selected chat is listed.');
@@ -820,6 +1154,7 @@ button('forget').addEventListener('click', () => {
   showAction(
     'Clear this local snapshot?',
     '<p>This removes imported conversations from ChatFlow on this device. It does not delete anything from ChatGPT, your source export, or your downloads.</p><button id="confirm-forget" class="button danger">Clear local snapshot</button>',
+    'clear',
   );
   button('confirm-forget').addEventListener('click', () => {
     void (async () => {
@@ -845,6 +1180,7 @@ void (async () => {
   busy = true;
   updateControls();
   try {
+    announce('Opening your saved local library...');
     const response = await request({ type: 'restore' });
     if (response.type === 'dataset') dataset = response.dataset;
     busy = false;

@@ -1,0 +1,162 @@
+.workflow-guide {
+  --guide-ink: var(--guide-info);
+  --guide-wash: var(--guide-info-bg);
+  position: sticky;
+  top: 10px;
+  z-index: 3;
+  isolation: isolate;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--guide-ink);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 5px 20px #0000000a;
+  overflow-wrap: anywhere;
+}
+.workflow-guide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(110deg, var(--guide-wash), transparent 85%);
+  z-index: -1;
+}
+.workflow-guide[data-tone='success'] {
+  --guide-ink: var(--guide-success);
+  --guide-wash: var(--guide-success-bg);
+}
+.workflow-guide[data-tone='warning'] {
+  --guide-ink: var(--guide-warning);
+  --guide-wash: var(--guide-warning-bg);
+}
+.workflow-guide[data-tone='error'] {
+  --guide-ink: var(--danger);
+  --guide-wash: var(--guide-error-bg);
+}
+.workflow-guide-top,
+.workflow-guide-steps,
+.workflow-guide-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.workflow-guide-top {
+  justify-content: space-between;
+}
+.workflow-guide-eyebrow {
+  font-size: 9px;
+  letter-spacing: 1.4px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.workflow-guide-badge {
+  border: 1px solid var(--guide-ink);
+  border-radius: 20px;
+  color: var(--guide-ink);
+  background: var(--surface);
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 650;
+}
+.workflow-guide-steps {
+  list-style: none;
+  padding: 0 0 3px;
+  margin: 10px 0;
+  overflow-x: auto;
+  font-size: 10px;
+}
+.workflow-guide-steps li {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.workflow-guide-steps:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.workflow-guide-steps li + li::before {
+  content: '';
+  width: 10px;
+  border-top: 1px solid var(--line);
+  margin-right: 3px;
+}
+.workflow-guide-number {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-weight: 700;
+}
+.workflow-guide-steps [data-state='done'] {
+  color: var(--guide-success);
+}
+.workflow-guide-steps [data-state='done'] .workflow-guide-number {
+  background: var(--guide-success-bg);
+  border-color: var(--guide-success);
+  font-size: 0;
+}
+.workflow-guide-steps [data-state='done'] .workflow-guide-number::after {
+  content: '';
+  width: 7px;
+  height: 4px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-1px) rotate(-45deg);
+}
+.workflow-guide-steps [data-state='current'] {
+  color: var(--guide-ink);
+  font-weight: 700;
+}
+.workflow-guide-steps [data-state='current'] .workflow-guide-number {
+  background: var(--guide-wash);
+  border-color: var(--guide-ink);
+}
+.workflow-guide-copy h2 {
+  font-size: 16px;
+  line-height: 1.35;
+  margin: 0 0 5px;
+  letter-spacing: -0.3px;
+}
+.workflow-guide-copy p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+  margin: 0;
+}
+.workflow-guide-actions {
+  flex-wrap: wrap;
+}
+.workflow-guide-actions:has(button:not([hidden])) {
+  margin-top: 10px;
+}
+.workflow-guide-actions button {
+  white-space: normal;
+}
+dialog .workflow-guide {
+  top: 0;
+  margin-top: 8px;
+}
+@media (max-width: 480px) {
+  .workflow-guide {
+    top: 6px;
+    padding: 11px 12px;
+  }
+  .workflow-guide-copy h2 {
+    font-size: 14px;
+  }
+  .workflow-guide-copy p {
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .workflow-guide {
+    transition: border-color 160ms ease;
+  }
+}
